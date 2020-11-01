@@ -1,0 +1,15 @@
+[package]
+name = "fastq-stats"
+description = ""
+readme = "README.md"
+homepage = "https://github.com/angelovangel/fastq-stats"
+repository = "https://github.com/angelovangel/fastq-stats"
+keywords = ["fastq", "bio"]
+version = "0.1.0"
+authors = ["Angel Angelov <aangeloo@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bio = "*"
