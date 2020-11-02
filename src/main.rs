@@ -8,7 +8,7 @@ use bio::io::fastq;
 use bio::io::fastq::FastqRead;
 
 // fastq reader, file as arg, decide based on extension
-fn get_fastq_reader(path: &String) -> Box<::std::io::Read> {
+fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
     if path.ends_with(".gz") {
         let f = fs::File::open(path).unwrap();
         Box::new(bufread::MultiGzDecoder::new(BufReader::new(f)))
@@ -55,7 +55,7 @@ fn main() {
     // read file
     let args: Vec<String> = env::args().collect();
     let arg1 = &args[1];
-
+    
     if arg1.starts_with("--help") {
         println!("Usage: fastq-stats fastq-file.fastq[.gz] \n \n\
                   Input files may be compressed using gzip, \n\
@@ -96,7 +96,7 @@ fn main() {
     let median_len = median(&mut len_vector);
     let n50 = n50(&mut len_vector, 0.5); // use 0.1 for N90!!!
 
-    println!("reads\tbases\tminlen\tav_len\tmedian_len\tmaxlen\tN50");
-    println!("{}\t{}\t{}\t{}\t{}\t{}\t{}", reads, bases, minlen, av_len, median_len, maxlen, n50);
+    println!("file\treads\tbases\tminlen\tmaxlen\tav_len\tmedian_len\tN50");
+    println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", arg1, reads, bases, minlen, maxlen, av_len, median_len, n50);
 }
 
