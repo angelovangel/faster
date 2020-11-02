@@ -1,7 +1,21 @@
-use std::io;
+//use std::io;
+use std::io::BufReader;
+use std::env;
+use std::fs;
+use std::process;
+use flate2::bufread;
 use bio::io::fastq;
 use bio::io::fastq::FastqRead;
 
+// fastq reader, file as arg, decide based on extension
+fn get_fastq_reader(path: &String) -> Box<::std::io::Read> {
+    if path.ends_with(".gz") {
+        let f = fs::File::open(path).unwrap();
+        Box::new(bufread::MultiGzDecoder::new(BufReader::new(f)))
+    } else {
+        Box::new(fs::File::open(path).unwrap())
+    }
+}
 // take a fastq on stdin and output a tab separated table with useful info
 
 // just average
@@ -38,7 +52,18 @@ fn n50(numbers: &mut [i32], fraction: f32) -> i32 {
 
 fn main() {
 
-    let mut reader = fastq::Reader::new(io::stdin());
+    // read file
+    let args: Vec<String> = env::args().collect();
+    let arg1 = &args[1];
+
+    if arg1.starts_with("--help") {
+        println!("Usage: fastq-stats fastq-file.fastq[.gz] \n \n\
+                  Input files may be compressed using gzip, \n\
+                  in which case they must end with '.gz'");
+        process::exit(0);
+    }
+
+    let mut reader = fastq::Reader::new(get_fastq_reader(arg1));
     let mut record = fastq::Record::new();
 
     let mut reads = 0;

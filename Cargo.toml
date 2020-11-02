@@ -13,3 +13,4 @@ edition = "2018"
 
 [dependencies]
 bio = "*"
+flate2 = "1.0.18"
