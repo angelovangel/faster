@@ -72,17 +72,16 @@ fn main() {
     let mut maxlen = 0;
     let mut len_vector: Vec<i32> = Vec::new();
 
-
     reader
         .read(&mut record)
         .expect("Failed to parse fastq record!");
 
     while !record.is_empty() {
-        let seq = record.seq();
+        //let seq = record.seq();
         let len = record.seq().len() as i32;
-
+        
         reads += 1;
-        bases += seq.len();
+        bases += len;
         minlen = len.min(minlen);
         maxlen = len.max(maxlen);
         len_vector.push(len);
