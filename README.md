@@ -7,7 +7,7 @@ A (very) fast program for getting statistics about a fastq file, the way I need 
 
 ## Install
 
-Compiled binaries are provided for x86_64 Linux, macOS and Windows - just download and run. If you need to run it on something else (your phone?!), you will have to compile it yourself (which is pretty easy though). Below is an example on how to setup a Rust toolchain and download and compile `fastq-stats`:
+Compiled binaries are provided for x86_64 Linux, macOS and Windows - just download from the releases section and run. You will have to make the file executable (`chmod a+x fastq-stats...`) and for MacOS, allow running external apps in your security settings. If you need to run it on something else (your phone?!), you will have to compile it yourself (which is pretty easy though). Below is an example on how to setup a Rust toolchain and compile `fastq-stats`:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -32,6 +32,9 @@ fastq-stats file.fastq
 parallel fastq-stats ::: /path/to/fastq/*.fastq.gz
 ```
 
+The output is a tab-separated table with the following columns:   
+`file   reads   bases   minlen  maxlen  av_len  median_len  N50`
+
 ## Performance
 
 Not tested very thoroughly, but it should be 2-5x faster than `seqkit stats`, especially on gz files. This is not a fair test though, as seqkit offers many more functionalities. Below some benchmarks on a MacBook Pro with an 8-core 2.3 GHz Quad-Core Intel Core i5 and 8 GB RAM:
@@ -44,7 +47,10 @@ fastq-stats
 seqkit stats
 0.30s user 0.20s system 99% cpu 0.504 total
 
-# for an Illumina fastq.gz file 
+wc -l
+0.39s user 0.10s system 99% cpu 0.489 total
+
+# for an Illumina fastq.gz file with 128k reads and 13M bases
 fastq-stats
 0.17s user 0.00s system 98% cpu 0.174 total
 
