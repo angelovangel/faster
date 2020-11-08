@@ -4,6 +4,12 @@ A (very) fast program for getting statistics about a fastq file, the way I need 
 
 ## Description
 
+I wrote this program to get fast and accurate statistics about a fastq file, formatted as a tab-separated table. The motivation behind it:
+
+- many of the tools out there are just wrong when it comes to calculating mean phred scores (yes, just taking the mean phred score is wrong, it should be the geometric mean)
+- one simple executable doing one thing well, no dependencies
+- the output can be easily tweaked as desired, just basic programming skills required
+- written with speed in mind, and can be easily run in parallel
 
 ## Install
 
@@ -17,23 +23,23 @@ cd fastq-stats
 cargo build --release
 
 # the binary is now under ./target/release/, run it like this:
-./target/release/fastq-stats file.fastq.gz
+./target/release/fastq-stats /path/to/fastq/file.fastq.gz
 
 ```
 
-## Usage
+## Usage and tweaking the output
 
 The program takes one fasq/fastq.gz file as an argument and outputs a tab-separated table with statistics to stdout.
 
 ```bash
-fastq-stats file.fastq
+fastq-stats /path/to/fastq/file.fastq
 
 # for many files, with parallel
 parallel fastq-stats ::: /path/to/fastq/*.fastq.gz
 ```
 
 The output is a tab-separated table with the following columns:   
-`file   reads   bases   minlen  maxlen  av_len  median_len  N50`
+`file   reads   bases   minlen  maxlen  av_len  median_len  N50 Q20_percent Q30_percent`
 
 ## Performance
 

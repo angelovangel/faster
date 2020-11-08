@@ -20,7 +20,7 @@ fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
 }
 
 // just average
-fn average(numbers: &[i32]) -> f32 {
+fn mean(numbers: &[i32]) -> f32 {
     numbers.iter().sum::<i32>() as f32 / numbers.len() as f32
 }
 
@@ -52,7 +52,7 @@ fn n50(numbers: &mut [i32], fraction: f32) -> i32 {
 }
 
 // get number of bases with q >= value
-fn get_qual2(q: &[u8], qx: u8) -> i32 {
+fn get_qual_bases(q: &[u8], qx: u8) -> i32 {
     let mut n = 0;
     for &item in q.iter()
      {
@@ -97,8 +97,8 @@ fn main() {
         
         reads += 1;
         bases += len;
-        qual20 += get_qual2(record.qual(), 53); // 33 offset
-        qual30 += get_qual2(record.qual(), 63);
+        qual20 += get_qual_bases(record.qual(), 53); // 33 offset
+        qual30 += get_qual_bases(record.qual(), 63);
         minlen = len.min(minlen);
         maxlen = len.max(maxlen);
         len_vector.push(len);
@@ -108,12 +108,12 @@ fn main() {
             .expect("Failed to parse fastq record!");
     }
 
-    let av_len = average(&len_vector);
+    let mean_len = mean(&len_vector);
     let median_len = median(&mut len_vector);
     let n50 = n50(&mut len_vector, 0.5); // use 0.1 for N90!!!
     let q20 = qual20 as f64 / bases as f64 * 100.0;
     let q30 = qual30 as f64 / bases as f64 * 100.0;
 
-    println!("file\treads\tbases\tminlen\tmaxlen\tav_len\tmedian_len\tN50\tQ20\tQ30");
-    println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}", arg1, reads, bases, minlen, maxlen, av_len, median_len, n50, q20, q30);
+    println!("file\treads\tbases\tmin_len\tmax_len\tmean_len\tmedian_len\tN50\tQ20_percent\tQ30_percent");
+    println!("{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}", arg1, reads, bases, minlen, maxlen, mean_len, median_len, n50, q20, q30);
 }
