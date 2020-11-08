@@ -62,4 +62,11 @@ fastq-stats
 
 seqkit stats
 1.05s user 0.04s system 101% cpu 1.075 total
+
+# for a small Illumina iSeq run, 11.5M reads and 1.7G bases, here it becomes more interesting
+fastq-stats (with gnu parallel)
+34.43s user 1.17s system 624% cpu 5.697 total
+
+seqkit stats -a (with gnu parallel)
+239.80s user 5.11s system 683% cpu 35.824 total
 ```
