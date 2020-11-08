@@ -13,10 +13,11 @@ fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
         let f = fs::File::open(path).unwrap();
         Box::new(bufread::MultiGzDecoder::new(BufReader::new(f)))
     } else {
-        Box::new(fs::File::open(path).unwrap())
+        let f = fs::File::open(path).unwrap();
+        Box::new(BufReader::new(f))
+        //Box::new(fs::File::open(path).unwrap())
     }
 }
-// take a fastq on stdin and output a tab separated table with useful info
 
 // just average
 fn average(numbers: &[i32]) -> f32 {
@@ -50,6 +51,18 @@ fn n50(numbers: &mut [i32], fraction: f32) -> i32 {
     numbers[n50_index]
 }
 
+// get number of bases with q >= value
+fn get_qual2(q: &[u8], qx: u8) -> i32 {
+    let mut n = 0;
+    for &item in q.iter()
+     {
+        if *&item >= qx {
+            n += 1
+        }
+    }
+    n
+}
+
 fn main() {
 
     // read file
@@ -60,7 +73,7 @@ fn main() {
         println!("Usage: fastq-stats fastq-file.fastq[.gz] \n \n\
                   Input files may be compressed using gzip, \n\
                   in which case they must end with '.gz'");
-        process::exit(0);
+        process::exit(1);
     }
 
     let mut reader = fastq::Reader::new(get_fastq_reader(arg1));
@@ -68,6 +81,8 @@ fn main() {
 
     let mut reads = 0;
     let mut bases = 0;
+    let mut qual20 = 0;
+    let mut qual30 = 0;
     let mut minlen: i32 = i32::MAX;
     let mut maxlen = 0;
     let mut len_vector: Vec<i32> = Vec::new();
@@ -82,6 +97,8 @@ fn main() {
         
         reads += 1;
         bases += len;
+        qual20 += get_qual2(record.qual(), 53); // 33 offset
+        qual30 += get_qual2(record.qual(), 63);
         minlen = len.min(minlen);
         maxlen = len.max(maxlen);
         len_vector.push(len);
@@ -94,8 +111,9 @@ fn main() {
     let av_len = average(&len_vector);
     let median_len = median(&mut len_vector);
     let n50 = n50(&mut len_vector, 0.5); // use 0.1 for N90!!!
+    let q20 = qual20 as f64 / bases as f64 * 100.0;
+    let q30 = qual30 as f64 / bases as f64 * 100.0;
 
-    println!("file\treads\tbases\tminlen\tmaxlen\tav_len\tmedian_len\tN50");
-    println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}", arg1, reads, bases, minlen, maxlen, av_len, median_len, n50);
+    println!("file\treads\tbases\tminlen\tmaxlen\tav_len\tmedian_len\tN50\tQ20\tQ30");
+    println!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}", arg1, reads, bases, minlen, maxlen, av_len, median_len, n50, q20, q30);
 }
-

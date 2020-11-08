@@ -37,7 +37,7 @@ The output is a tab-separated table with the following columns:
 
 ## Performance
 
-Not tested very thoroughly, but it should be 2-5x faster than `seqkit stats`, especially on gz files. This is not a fair test though, as seqkit offers many more functionalities. Below some benchmarks on a MacBook Pro with an 8-core 2.3 GHz Quad-Core Intel Core i5 and 8 GB RAM:
+Not tested very thoroughly, but it should be 2-3x faster than `seqkit stats -a`, especially for fastq.gz files. Below some benchmarks on a MacBook Pro with an 8-core 2.3 GHz Quad-Core Intel Core i5 and 8 GB RAM:
 
 ```bash
 # for a Nanopore fastq file with 37k reads and 350M bases
