@@ -31,7 +31,7 @@ fn median(numbers: &mut [i32]) -> i32 {
     numbers[mid]
 }
 
-// n5o , TODO - make it nX with a second parameter
+// n50 , TODO - make it nX with a second parameter
 fn n50(numbers: &mut [i32], fraction: f32) -> i32 {
 
     numbers.sort_unstable();
