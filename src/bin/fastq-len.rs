@@ -1,4 +1,4 @@
-// get gc content per read in fastq file
+// get len per read in fastq file
 use std::io::BufReader;
 use std::env;
 use std::fs;
@@ -6,7 +6,6 @@ use std::process;
 use flate2::bufread;
 use bio::io::fastq;
 use bio::io::fastq::FastqRead;
-use bio::seq_analysis::gc::gc_content;
 
 // fastq reader, file as arg, decide based on extension
 fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
@@ -42,8 +41,8 @@ fn main() {
         .expect("Failed to parse fastq record!");
     
         while !record.is_empty() {
-        let seq = record.seq();
-        println!("{}", gc_content(seq));
+        let len = record.seq().len() as i32;
+        println!("{}", len);
 
         reader
             .read(&mut record)

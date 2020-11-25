@@ -70,7 +70,7 @@ fn main() {
     let arg1 = &args[1];
     
     if arg1.starts_with("--help") {
-        println!("Usage: fastq-stats fastq-file.fastq[.gz] \n \n\
+        println!("Usage: fastq-stats file.fastq[.gz] \n \n\
                   Input files may be compressed using gzip, \n\
                   in which case they must end with '.gz'");
         process::exit(1);
