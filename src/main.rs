@@ -1,11 +1,14 @@
 //use std::io;
 use std::io::BufReader;
-use std::env;
 use std::fs;
 use std::process;
 use flate2::bufread;
 use bio::io::fastq;
 use bio::io::fastq::FastqRead;
+use bio::seq_analysis::gc::gc_content;
+
+extern crate clap;
+use clap::{Arg, App};
 
 // fastq reader, file as arg, decide based on extension
 fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
@@ -65,18 +68,34 @@ fn get_qual_bases(q: &[u8], qx: u8) -> i32 {
 
 fn main() {
 
+    let matches = App::new("fastq-stats")
+                        .version("0.1.3")
+                        .author("Angel Angelov <aangeloo@gmail.com>")
+                        .about("fast statistics and more for fastq files")
+                        .arg(Arg::with_name("stats")
+                            .short("s")
+                            .long("stats")
+                            .help("Output a table with statistics about the fastq file"))
+                               //.takes_value(true))
+                        .arg(Arg::with_name("len")
+                            .short("l")
+                            .long("len")
+                            .help("Output read lengths, one line per read"))
+                        .arg(Arg::with_name("gc")
+                            .short("g")
+                            .long("gc")
+                            .help("Output gc values, one line per read"))
+                        .arg(Arg::with_name("INPUT")
+                               .help("path to fastq file")
+                               .required(true)
+                               .takes_value(true)
+                               .index(1))
+                          .get_matches();
+    //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
-    let args: Vec<String> = env::args().collect();
-    let arg1 = &args[1];
-    
-    if arg1.starts_with("--help") {
-        println!("Usage: fastq-stats file.fastq[.gz] \n \n\
-                  Input files may be compressed using gzip, \n\
-                  in which case they must end with '.gz'");
-        process::exit(1);
-    }
+    let infile = matches.value_of("INPUT").unwrap().to_string();
 
-    let mut reader = fastq::Reader::new(get_fastq_reader(arg1));
+    let mut reader = fastq::Reader::new(get_fastq_reader(&infile));
     let mut record = fastq::Record::new();
 
     let mut reads = 0;
@@ -87,10 +106,43 @@ fn main() {
     let mut maxlen = 0;
     let mut len_vector: Vec<i32> = Vec::new();
 
+    // here discriminate output based on arguments
+    //case len
+    if matches.is_present("len") {
+        reader
+            .read(&mut record)
+            .expect("Failed to parse fastq record!");
+
+        while !record.is_empty() {
+            let len = record.seq().len() as i32;
+            println!("{}", len);
+
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+        }
+        process::exit(0);
+
+    // case gc
+    } else if matches.is_present("gc") {
+        reader
+            .read(&mut record)
+            .expect("Failed to parse fastq record!");
+        while !record.is_empty() {
+            let seq = record.seq();
+            println!("{}", gc_content(seq));
+
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+        }
+        process::exit(0);
+    }
+
+    // normal case, output table
     reader
         .read(&mut record)
         .expect("Failed to parse fastq record!");
-
     while !record.is_empty() {
         //let seq = record.seq();
         let len = record.seq().len() as i32;
@@ -115,5 +167,5 @@ fn main() {
     let q30 = qual30 as f64 / bases as f64 * 100.0;
 
     println!("file\treads\tbases\tmin_len\tmax_len\tmean_len\tmedian_len\tN50\tQ20_percent\tQ30_percent");
-    println!("{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}", arg1, reads, bases, minlen, maxlen, mean_len, median_len, n50, q20, q30);
+    println!("{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}", infile, reads, bases, minlen, maxlen, mean_len, median_len, n50, q20, q30);
 }
