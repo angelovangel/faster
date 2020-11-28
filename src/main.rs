@@ -89,11 +89,11 @@ fn main() {
                         .arg(Arg::with_name("INPUT")
                             .help("path to fastq file")
                             .required(true)
-                            .takes_value(true)
                             .index(1))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
+    // Here we can call .unwrap() because the argument is required.
     let infile = matches.value_of("INPUT").unwrap().to_string();
 
     let mut reader = fastq::Reader::new(get_fastq_reader(&infile));
