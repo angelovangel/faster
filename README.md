@@ -32,6 +32,9 @@ cargo build --release
 The program takes one fasq/fastq.gz file as an argument and outputs a tab-separated table with statistics to stdout.
 
 ```bash
+# for help
+fastq-stats -h
+#
 fastq-stats /path/to/fastq/file.fastq
 
 # for many files, with parallel

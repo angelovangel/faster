@@ -71,26 +71,27 @@ fn main() {
     let matches = App::new("fastq-stats")
                         .version("0.1.3")
                         .author("Angel Angelov <aangeloo@gmail.com>")
-                        .about("fast statistics and more for fastq files")
+                        .about("fast statistics and more for 1 fastq file")
                         .arg(Arg::with_name("stats")
                             .short("s")
                             .long("stats")
+                            .conflicts_with_all(&["len", "gc"]) //conflicts_with is two-way, so no need for the others
                             .help("Output a table with statistics about the fastq file"))
-                               //.takes_value(true))
                         .arg(Arg::with_name("len")
                             .short("l")
                             .long("len")
+                            .conflicts_with("gc")
                             .help("Output read lengths, one line per read"))
                         .arg(Arg::with_name("gc")
                             .short("g")
                             .long("gc")
                             .help("Output gc values, one line per read"))
                         .arg(Arg::with_name("INPUT")
-                               .help("path to fastq file")
-                               .required(true)
-                               .takes_value(true)
-                               .index(1))
-                          .get_matches();
+                            .help("path to fastq file")
+                            .required(true)
+                            .takes_value(true)
+                            .index(1))
+                        .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
     let infile = matches.value_of("INPUT").unwrap().to_string();
@@ -108,6 +109,7 @@ fn main() {
 
     // here discriminate output based on arguments
     //case len
+
     if matches.is_present("len") {
         reader
             .read(&mut record)
