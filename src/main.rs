@@ -1,4 +1,4 @@
-//use std::io;
+use std::io;
 use std::io::BufReader;
 use std::fs;
 use std::process;
@@ -66,26 +66,48 @@ fn get_qual_bases(q: &[u8], qx: u8) -> i32 {
     n
 }
 
+// to get mean of q scores from a record - first convert to prob, calc mean, then back to phred
+// this fn reads phred and converts to probs and returns their sum
+// 
+fn qscore_probs(q: &[u8]) -> f32 {
+    let mut qprob_sum= 0.0;
+    for &item in q.iter() {
+        let phred = *&item as f32 - 33.0;
+        let prob = 10.0_f32.powf(-phred/10.0);
+        qprob_sum += prob
+    }
+    qprob_sum
+}
+
 fn main() {
 
     let matches = App::new("fastq-stats")
                         .version("0.1.3")
                         .author("Angel Angelov <aangeloo@gmail.com>")
                         .about("fast statistics and more for 1 fastq file")
+
                         .arg(Arg::with_name("stats")
                             .short("s")
                             .long("stats")
-                            .conflicts_with_all(&["len", "gc"]) //conflicts_with is two-way, so no need for the others
-                            .help("Output a table with statistics about the fastq file"))
+                            .conflicts_with_all(&["len", "gc", "qscore"]) //conflicts_with is two-way, so no need for the others
+                            .help("Output a table with statistics about the fastq file. If no flags are used this is the default."))
+
                         .arg(Arg::with_name("len")
                             .short("l")
                             .long("len")
                             .conflicts_with("gc")
                             .help("Output read lengths, one line per read"))
+
                         .arg(Arg::with_name("gc")
                             .short("g")
                             .long("gc")
                             .help("Output gc values, one line per read"))
+
+                        .arg(Arg::with_name("qscore")
+                        .short("q")
+                        .long("qscore")
+                        .help("Output 'mean' read qscores, one line per read. For this, the mean of the probabilities is calculated, and the result is converted back to a phred score"))
+
                         .arg(Arg::with_name("INPUT")
                             .help("path to fastq file")
                             .required(true)
@@ -98,6 +120,7 @@ fn main() {
 
     let mut reader = fastq::Reader::new(get_fastq_reader(&infile));
     let mut record = fastq::Record::new();
+    let mut writer = fastq::Writer::new(io::stdout());
 
     let mut reads = 0;
     let mut bases = 0;
@@ -139,6 +162,22 @@ fn main() {
                 .expect("Failed to parse fastq record!");
         }
         process::exit(0);
+
+    } else if matches.is_present("qscore") {
+        reader
+            .read(&mut record)
+            .expect("Failed to parse fastq record!");
+
+        while !record.is_empty() {
+            let qscore = qscore_probs(record.qual()) / record.seq().len() as f32;
+            println!("{:.4}", -10.0 * qscore.log10());
+
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+        }
+        process::exit(0);
+
     }
 
     // normal case, output table
