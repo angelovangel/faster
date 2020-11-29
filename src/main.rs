@@ -89,13 +89,13 @@ fn main() {
                         .arg(Arg::with_name("stats")
                             .short("s")
                             .long("stats")
-                            .conflicts_with_all(&["len", "gc", "qscore"]) //conflicts_with is two-way, so no need for the others
+                            .conflicts_with_all(&["len", "gc", "qscore", "filter"]) //conflicts_with is two-way, so no need for the others
                             .help("Output a table with statistics about the fastq file. If no flags are used this is the default."))
 
                         .arg(Arg::with_name("len")
                             .short("l")
                             .long("len")
-                            .conflicts_with("gc")
+                            .conflicts_with_all(&["gc", "qscore", "filter"])
                             .help("Output read lengths, one line per read"))
 
                         .arg(Arg::with_name("gc")
@@ -104,9 +104,15 @@ fn main() {
                             .help("Output gc values, one line per read"))
 
                         .arg(Arg::with_name("qscore")
-                        .short("q")
-                        .long("qscore")
-                        .help("Output 'mean' read qscores, one line per read. For this, the mean of the probabilities is calculated, and the result is converted back to a phred score"))
+                            .short("q")
+                            .long("qscore")
+                            .help("Output 'mean' read qscores, one line per read. For this, the mean of the base probabilities for each read is calculated, and the result is converted back to a phred score"))
+
+                        .arg(Arg::with_name("filter")
+                            .short("f")
+                            .long("filter")
+                            .takes_value(true)
+                            .help("Filter reads based on length. Only reads with length greater than [integer] are written to stdout"))
 
                         .arg(Arg::with_name("INPUT")
                             .help("path to fastq file")
@@ -130,13 +136,12 @@ fn main() {
     let mut maxlen = 0;
     let mut len_vector: Vec<i32> = Vec::new();
 
-    // here discriminate output based on arguments
-    //case len
-
-    if matches.is_present("len") {
-        reader
+    reader
             .read(&mut record)
             .expect("Failed to parse fastq record!");
+    // here discriminate output based on arguments
+    //case len
+    if matches.is_present("len") {
 
         while !record.is_empty() {
             let len = record.seq().len() as i32;
@@ -150,9 +155,7 @@ fn main() {
 
     // case gc
     } else if matches.is_present("gc") {
-        reader
-            .read(&mut record)
-            .expect("Failed to parse fastq record!");
+
         while !record.is_empty() {
             let seq = record.seq();
             println!("{}", gc_content(seq));
@@ -164,9 +167,6 @@ fn main() {
         process::exit(0);
 
     } else if matches.is_present("qscore") {
-        reader
-            .read(&mut record)
-            .expect("Failed to parse fastq record!");
 
         while !record.is_empty() {
             let qscore = qscore_probs(record.qual()) / record.seq().len() as f32;
@@ -178,12 +178,32 @@ fn main() {
         }
         process::exit(0);
 
-    }
+    } else if matches.is_present("filter") {
+        let filterlen = matches.value_of("filter").unwrap();
+        // why so much code to parse an integer from arg!
+        let input_opt = filterlen.trim().parse::<i32>();
+        let input_int = match input_opt {
+            Ok(input_int) => input_int,
+            Err(e) => {
+                println!("Please use an integer for -f ({})", e);
+                return;
+            }
+        };
 
+        while !record.is_empty() {
+            let seqlen = record.seq().len() as i32;
+            if seqlen > input_int {
+                writer.write_record(&record).expect("Failed to write file!");
+            }
+
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+        }
+        process::exit(0);
+    }
+        
     // normal case, output table
-    reader
-        .read(&mut record)
-        .expect("Failed to parse fastq record!");
     while !record.is_empty() {
         //let seq = record.seq();
         let len = record.seq().len() as i32;
