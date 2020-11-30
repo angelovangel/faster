@@ -81,7 +81,7 @@ fn qscore_probs(q: &[u8]) -> f32 {
 
 fn main() {
 
-    let matches = App::new("fastq-stats")
+    let matches = App::new("faster")
                         .version("0.1.3")
                         .author("Angel Angelov <aangeloo@gmail.com>")
                         .about("fast statistics and more for 1 fastq file")
