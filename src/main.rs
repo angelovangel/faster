@@ -8,7 +8,7 @@ use bio::io::fastq::FastqRead;
 use bio::seq_analysis::gc::gc_content;
 
 extern crate clap;
-use clap::{Arg, App};
+use clap::{Arg, App, ArgGroup};
 
 // fastq reader, file as arg, decide based on extension
 fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
@@ -89,13 +89,11 @@ fn main() {
                         .arg(Arg::with_name("stats")
                             .short("s")
                             .long("stats")
-                            .conflicts_with_all(&["len", "gc", "qscore", "filter"]) //conflicts_with is two-way, so no need for the others
                             .help("Output a table with statistics about the fastq file. If no flags are used this is the default."))
 
                         .arg(Arg::with_name("len")
                             .short("l")
                             .long("len")
-                            .conflicts_with_all(&["gc", "qscore", "filter"])
                             .help("Output read lengths, one line per read"))
 
                         .arg(Arg::with_name("gc")
@@ -118,6 +116,10 @@ fn main() {
                             .help("path to fastq file")
                             .required(true)
                             .index(1))
+
+                        // this group makes one and only one arg from the set required, avoid defining conflicts_with
+                        .group(ArgGroup::with_name("group")
+                        .required(true).args(&["stats", "len", "gc", "qscore", "filter"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -139,6 +141,7 @@ fn main() {
     reader
             .read(&mut record)
             .expect("Failed to parse fastq record!");
+
     // here discriminate output based on arguments
     //case len
     if matches.is_present("len") {
@@ -166,6 +169,7 @@ fn main() {
         }
         process::exit(0);
 
+    // case qscore
     } else if matches.is_present("qscore") {
 
         while !record.is_empty() {
@@ -177,7 +181,8 @@ fn main() {
                 .expect("Failed to parse fastq record!");
         }
         process::exit(0);
-
+    
+    // case filter
     } else if matches.is_present("filter") {
         let filterlen = matches.value_of("filter").unwrap();
         // why so much code to parse an integer from arg!
