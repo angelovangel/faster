@@ -27,11 +27,29 @@ fn mean(numbers: &[i32]) -> f32 {
     numbers.iter().sum::<i32>() as f32 / numbers.len() as f32
 }
 
-// median is not precise for even numbers, but ok for this application, keep it as i32
-fn median(numbers: &mut [i32]) -> i32 {
-    numbers.sort();
-    let mid = numbers.len() / 2;
-    numbers[mid]
+// median is not precise for vectors with even numbers, but ok for this application, keep it as i32
+fn quartiles(numbers: &mut [i32], q: i8) -> i32 {
+    numbers.sort_unstable();
+    match q {
+        1 => {
+            let index = numbers.len() / 4;
+            return numbers[index]
+        },
+        2 => {
+            let index = numbers.len() / 2;
+            return numbers[index]
+        },
+        3 => {
+            // avoid having to use f64
+            let index1 = numbers.len() / 4;
+            let index2 = numbers.len() / 2;
+            return numbers[index1 + index2]
+        },
+        _ => 42 //:)
+    }
+    // first quartile
+    
+    
 }
 
 // n50 , TODO - make it nX with a second parameter
@@ -227,11 +245,13 @@ fn main() {
     }
 
     let mean_len = mean(&len_vector);
-    let median_len = median(&mut len_vector);
+    let quart1 = quartiles(&mut len_vector, 1);
+    let quart2 = quartiles(&mut len_vector, 2);
+    let quart3 = quartiles(&mut len_vector, 3);
     let n50 = n50(&mut len_vector, 0.5); // use 0.1 for N90!!!
     let q20 = qual20 as f64 / bases as f64 * 100.0;
     let q30 = qual30 as f64 / bases as f64 * 100.0;
 
-    println!("file\treads\tbases\tmin_len\tmax_len\tmean_len\tmedian_len\tN50\tQ20_percent\tQ30_percent");
-    println!("{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{:.2}\t{:.2}", infile, reads, bases, minlen, maxlen, mean_len, median_len, n50, q20, q30);
+    println!("file\treads\tbases\tmin_len\tmax_len\tmean_len\tQ1\tQ2\tQ3\tN50\tQ20_percent\tQ30_percent");
+    println!("{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}", infile, reads, bases, minlen, maxlen, mean_len, quart1, quart2, quart3, n50, q20, q30);
 }
