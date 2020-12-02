@@ -47,39 +47,52 @@ faster -s /path/to/fastq/file.fastq
 
 # for many files, with parallel
 parallel faster ::: /path/to/fastq/*.fastq.gz
+
+# again with parallel, but get rid of the table header
+parallel faster ::: /path/to/fastq/*.fastq.gz | sed -n '/^file\treads/!p'
 ```
 
 The statistics output is a tab-separated table with the following columns:   
-`file   reads   bases   minlen  maxlen  av_len  median_len  N50 Q20_percent Q30_percent`
+`file   reads   bases   minlen   max_len   mean_len   Q1   Q2   Q3   N50 Q20_percent Q30_percent`
 
 ## Performance
 
-Not tested very thoroughly, but it should be 2-3x faster than `seqkit stats -a`, especially for fastq.gz files. Below some benchmarks on a MacBook Pro with an 8-core 2.3 GHz Quad-Core Intel Core i5 and 8 GB RAM:
+To get an idea how `faster` compares to other tools, I have benchmarked it with two other popular programs and 3 different datasets. **I am aware that these tools have different and often much richer functionality (especially seqkit, I use it all the time), so these comparisons are for orientation only**. 
+The benchmarks were performed with [hyperfine]() (`-r 15 --warmup 2`) on a MacBook Pro with an 8-core 2.3 GHz Quad-Core Intel Core i5 and 8 GB RAM. For Illumina reads, `faster` is slightly slower than `seqstats` (written in C using the `klib` [library by Heng Li](https://github.com/attractivechaos/klib) - the fastest thing possible out there), and for Nanopore it is even a bit faster than `seqstats`. `seqkit stats` performs worse of the three tools tested, but bear in mind the extraordinarily rich functionality it has.
 
-```bash
-# for a Nanopore fastq file with 37k reads and 350M bases
-faster
-0.13s user 0.16s system 99% cpu 0.288 total
+***
+### dataset A - a small Nanopore fastq file with 37k reads and 350M bases
 
-seqkit stats
-0.30s user 0.20s system 99% cpu 0.504 total
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+|:---|---:|---:|---:|---:|
+| `faster -s datasetA.fastq` | 398.1 ± 21.2 | 380.4 | 469.6 | 1.00 |
+| `seqstats datasetA.fastq` | 633.6 ± 54.1 | 593.3 | 773.6 | 1.59 ± 0.16 |
+| `seqkit stats -a datasetA.fastq` | 1864.5 ± 70.3 | 1828.7 | 2117.3 | 4.68 ± 0.31 |
 
-wc -l
-0.39s user 0.10s system 99% cpu 0.489 total
+***
 
-# for an Illumina fastq.gz file with 128k reads and 13M bases
-faster
-0.17s user 0.00s system 98% cpu 0.077 total
+### dataset B - a small Illumina fastq.gz file with ~100k reads
 
-seqkit stats
-1.05s user 0.04s system 101% cpu 1.075 total
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+|:---|---:|---:|---:|---:|
+| `faster -s datasetB.fastq.gz` | 181.7 ± 2.3 | 177.7 | 184.6 | 1.36 ± 0.09 |
+| `seqstats datasetB.fastq.gz` | 133.4 ± 8.4 | 125.7 | 154.2 | 1.00 |
+| `seqkit stats -a datasetB.fastq.gz` | 932.6 ± 37.0 | 873.8 | 1028.9 | 6.99 ± 0.52 |
 
-# for a small Illumina iSeq run, 11.5M reads and 1.7G bases, here it becomes more interesting
-faster (with gnu parallel)
-34.43s user 1.17s system 624% cpu 5.697 total
+***
 
-seqkit stats -a (with gnu parallel)
-239.80s user 5.11s system 683% cpu 35.824 total
-```
+### dataset C - a small Illumina iSeq run, 11.5M reads and 1.7G bases, using `gnu parallel`
 
-More detailed tests coming soon ...
+| Command | Mean [s] | Min [s] | Max [s] | Relative |
+|:---|---:|---:|---:|---:|
+| `parallel faster -s ::: *.fastq.gz` | 6.438 ± 0.384 | 6.009 | 7.062 | 1.43 ± 0.15 |
+| `parallel seqstats ::: *.fastq.gz` | 4.488 ± 0.394 | 4.120 | 5.312 | 1.00 |
+| `parallel seqkit stats -a ::: *.fastq.gz` | 40.156 ± 1.747 | 38.762 | 44.132 | 8.95 ± 0.88 |
+
+***
+## Reference
+
+`faster` uses the excellent Rust-Bio library:
+
+[Köster, J. (2016). Rust-Bio: a fast and safe bioinformatics library. Bioinformatics, 32(3), 444-446.](https://academic.oup.com/bioinformatics/article/32/3/444/1743419)
+

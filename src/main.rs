@@ -107,7 +107,7 @@ fn main() {
                         .arg(Arg::with_name("stats")
                             .short("s")
                             .long("stats")
-                            .help("Output a table with statistics about the fastq file. If no flags are used this is the default."))
+                            .help("Output a (tab separated) table with statistics"))
 
                         .arg(Arg::with_name("len")
                             .short("l")
@@ -128,7 +128,7 @@ fn main() {
                             .short("f")
                             .long("filter")
                             .takes_value(true)
-                            .help("Filter reads based on length. Only reads with length greater than [integer] are written to stdout"))
+                            .help("Filter reads based on length - only reads with length greater than [integer] are written to stdout"))
 
                         .arg(Arg::with_name("INPUT")
                             .help("path to fastq file")
@@ -216,7 +216,8 @@ fn main() {
         while !record.is_empty() {
             let seqlen = record.seq().len() as i32;
             if seqlen > input_int {
-                writer.write_record(&record).expect("Failed to write file!");
+                writer.write_record(&record)
+                    .expect("Failed to write file!");
             }
 
             reader
