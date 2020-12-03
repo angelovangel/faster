@@ -23,12 +23,12 @@ fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
 }
 
 // just average
-fn mean(numbers: &[i32]) -> f32 {
-    numbers.iter().sum::<i32>() as f32 / numbers.len() as f32
+fn mean(numbers: &[i64]) -> f64 {
+    numbers.iter().sum::<i64>() as f64 / numbers.len() as f64
 }
 
 // median is not precise for vectors with even numbers, but ok for this application, keep it as i32
-fn quartiles(numbers: &mut [i32], q: i8) -> i32 {
+fn quartiles(numbers: &mut [i64], q: i8) -> i64 {
     numbers.sort_unstable();
     match q {
         1 => {
@@ -53,12 +53,12 @@ fn quartiles(numbers: &mut [i32], q: i8) -> i32 {
 }
 
 // n50 , TODO - make it nX with a second parameter
-fn n50(numbers: &mut [i32], fraction: f32) -> i32 {
+fn n50(numbers: &mut [i64], fraction: f32) -> i64 {
 
     numbers.sort_unstable();
 
     // half of the bases
-    let halfsum = numbers.iter().sum::<i32>() as f32 * fraction; // f32 * f32
+    let halfsum = numbers.iter().sum::<i64>() as f32 * fraction; // f32 * f32
 
     // cumsum of the sorted vector
     let cumsum = numbers.iter()
@@ -66,7 +66,7 @@ fn n50(numbers: &mut [i32], fraction: f32) -> i32 {
         .collect::<Vec<_>>();
     let n50_index = cumsum
         .iter()
-        .position(|&x| x > halfsum as i32)
+        .position(|&x| x > halfsum as i64)
         .unwrap();
 
     numbers[n50_index]
@@ -148,13 +148,6 @@ fn main() {
     let mut record = fastq::Record::new();
     let mut writer = fastq::Writer::new(io::stdout());
 
-    let mut reads = 0;
-    let mut bases = 0;
-    let mut qual20 = 0;
-    let mut qual30 = 0;
-    let mut minlen: i32 = i32::MAX;
-    let mut maxlen = 0;
-    let mut len_vector: Vec<i32> = Vec::new();
 
     reader
             .read(&mut record)
@@ -215,6 +208,7 @@ fn main() {
 
         while !record.is_empty() {
             let seqlen = record.seq().len() as i32;
+            // try branchless?
             if seqlen > input_int {
                 writer.write_record(&record)
                     .expect("Failed to write file!");
@@ -228,9 +222,17 @@ fn main() {
     }
         
     // normal case, output table
+    let mut reads = 0;
+    let mut bases = 0;
+    let mut qual20 = 0;
+    let mut qual30 = 0;
+    let mut minlen: i64 = i64::MAX;
+    let mut maxlen = 0;
+    let mut len_vector: Vec<i64> = Vec::new();
+
     while !record.is_empty() {
         //let seq = record.seq();
-        let len = record.seq().len() as i32;
+        let len = record.seq().len() as i64; // here have to accomodate bigger numbers, as bases can get > 2^32
         
         reads += 1;
         bases += len;

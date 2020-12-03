@@ -16,7 +16,7 @@ The motivation behind it:
 - many of the tools out there are just wrong when it comes to calculating 'mean' phred scores (yes, just taking the mean phred score is wrong, it should be the geometric mean)
 - one simple executable doing one thing well, no dependencies
 - it is straightforward to parse the output in other programs and the output is easy to tweak as desired
-- written with speed in mind, and can be easily run in parallel
+- can be easily run in parallel
 
 ## Install
 
