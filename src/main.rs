@@ -73,7 +73,7 @@ fn n50(numbers: &mut [i64], fraction: f32) -> i64 {
 }
 
 // get number of bases with q >= value
-fn get_qual_bases(q: &[u8], qx: u8) -> i32 {
+fn get_qual_bases(q: &[u8], qx: u8) -> i64 {
     let mut n = 0;
     for &item in q.iter()
      {
@@ -222,10 +222,10 @@ fn main() {
     }
         
     // normal case, output table
-    let mut reads = 0;
-    let mut bases = 0;
-    let mut qual20 = 0;
-    let mut qual30 = 0;
+    let mut reads: i64 = 0;
+    let mut bases: i64 = 0;
+    let mut qual20: i64 = 0;
+    let mut qual30: i64 = 0;
     let mut minlen: i64 = i64::MAX;
     let mut maxlen = 0;
     let mut len_vector: Vec<i64> = Vec::new();
