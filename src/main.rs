@@ -148,17 +148,17 @@ fn main() {
     let mut record = fastq::Record::new();
     let mut writer = fastq::Writer::new(io::stdout());
 
-
+    // read first record, then check for arguments
     reader
             .read(&mut record)
             .expect("Failed to parse fastq record!");
 
-    // here discriminate output based on arguments
+    // stay in loop until all records are read
     //case len
     if matches.is_present("len") {
 
         while !record.is_empty() {
-            let len = record.seq().len() as i32;
+            let len = record.seq().len() as i64;
             println!("{}", len);
 
             reader
