@@ -6,6 +6,8 @@ use flate2::bufread;
 use bio::io::fastq;
 use bio::io::fastq::FastqRead;
 use bio::seq_analysis::gc::gc_content;
+use rand::seq::IteratorRandom;
+
 
 extern crate clap;
 use clap::{Arg, App, ArgGroup};
@@ -97,6 +99,24 @@ fn qscore_probs(q: &[u8]) -> f32 {
     qprob_sum
 }
 
+// subsample records (reads) from a fastq file, given number of reads
+fn samplefq(path: &String, n: usize) {
+
+    let records = fastq::Reader::new(get_fastq_reader(path)).records();
+    let mut writer = fastq::Writer::new(io::stdout());
+    let mut rng = rand::thread_rng();
+
+    // sampled is a vector of result types
+    let sampled = records.choose_multiple(&mut rng, n);
+    for record in sampled {
+        // get the record
+        let r = record.unwrap();
+        writer
+            .write_record(&r)
+            .expect("Error in writing fastq record!");
+    }
+}
+
 fn main() {
 
     let matches = App::new("faster")
@@ -104,9 +124,9 @@ fn main() {
                         .author("Angel Angelov <aangeloo@gmail.com>")
                         .about("fast statistics and more for 1 fastq file")
 
-                        .arg(Arg::with_name("stats")
-                            .short("s")
-                            .long("stats")
+                        .arg(Arg::with_name("table")
+                            .short("t")
+                            .long("table")
                             .help("Output a (tab separated) table with statistics"))
 
                         .arg(Arg::with_name("len")
@@ -124,6 +144,12 @@ fn main() {
                             .long("qscore")
                             .help("Output 'mean' read qscores, one line per read. For this, the mean of the base probabilities for each read is calculated, and the result is converted back to a phred score"))
 
+                        .arg(Arg::with_name("sample")
+                        .short("s")
+                        .long("sample")
+                        .takes_value(true)
+                        .help("sub-sample sequences by proportion"))
+
                         .arg(Arg::with_name("filter")
                             .short("f")
                             .long("filter")
@@ -137,7 +163,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["stats", "len", "gc", "qscore", "filter"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -210,7 +236,8 @@ fn main() {
             let seqlen = record.seq().len() as i32;
             // try branchless?
             if seqlen > input_int {
-                writer.write_record(&record)
+                writer
+                    .write_record(&record)
                     .expect("Failed to write file!");
             }
 
@@ -219,6 +246,36 @@ fn main() {
                 .expect("Failed to parse fastq record!");
         }
         process::exit(0);
+        
+    } else if matches.is_present("sample") {
+        // get n reads first
+        let mut reads: i64 = 0;
+        while !record.is_empty() {
+            reads += 1;
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+        }
+
+        // parse fraction
+        let fraction = matches
+            .value_of("sample")
+            .unwrap()
+            .trim()
+            .parse::<f32>()
+            .unwrap();
+        // how many reads to sample? also check if fraction is 0..1
+        match fraction {
+            // see <https://stackoverflow.com/a/58434531/8040734>
+            x if (0.0..1.0).contains(&x) => {
+                let nreads = reads as f32 * fraction;
+                samplefq(&infile, nreads as usize);
+                //println!("nreads: {}", nreads as usize);
+                process::exit(0);
+            },
+            _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!")
+        }
+        
     }
         
     // normal case, output table

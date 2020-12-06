@@ -279,6 +279,7 @@ dependencies = [
  "bio",
  "clap",
  "flate2",
+ "rand",
 ]
 
 [[package]]

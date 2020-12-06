@@ -4,12 +4,13 @@ A (very) fast program for getting statistics and features from a fastq file, in 
 
 ## Description
 
-I wrote this program to get *fast* and accurate statistics about a fastq file, formatted as a tab-separated table. In addition, it can be used to get the following features from a fastq file:
+I wrote this program to get *fast* and accurate statistics about a fastq file, formatted as a tab-separated table. In addition, it can do the following with a fastq file:
 
-- read lengths
-- gc content per read
-- geometric mean of phred scores per read
+- get the read lengths
+- get gc content per read
+- get geometric mean of phred scores per read
 - filter reads based on length
+- subsample reads (by proportion of all reads in the file)
 
 The motivation behind it:
 
@@ -36,7 +37,7 @@ cargo build --release
 
 ## Usage and tweaking the output
 
-The program takes one fastq/fastq.gz file as an argument and, when used with the `-s` flag, outputs a tab-separated table with statistics to stdout. There are options to obtain the length, GC-content, and 'mean' phred scores per read, or to filter reads by length, see `-help` for details.
+The program takes one fastq/fastq.gz file as an argument and, when used with the `--table` flag, outputs a tab-separated table with statistics to stdout. There are options to obtain the length, GC-content, and 'mean' phred scores per read, or to filter reads by length, see `-help` for details.
 
 ```bash
 # for help
