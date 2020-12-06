@@ -1,16 +1,13 @@
-use std::io;
-use std::io::BufReader;
-use std::fs;
-use std::process;
+use std::{io, io::BufReader, fs, process};
 use flate2::bufread;
-use bio::io::fastq;
-use bio::io::fastq::FastqRead;
+use bio::io::{fastq, fastq::FastqRead};
 use bio::seq_analysis::gc::gc_content;
 use rand::seq::IteratorRandom;
 
-
 extern crate clap;
 use clap::{Arg, App, ArgGroup};
+// own functions
+mod modules;
 
 // fastq reader, file as arg, decide based on extension
 fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
@@ -22,81 +19,6 @@ fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
         Box::new(BufReader::new(f))
         //Box::new(fs::File::open(path).unwrap())
     }
-}
-
-// just average
-fn mean(numbers: &[i64]) -> f64 {
-    numbers.iter().sum::<i64>() as f64 / numbers.len() as f64
-}
-
-// median is not precise for vectors with even numbers, but ok for this application, keep it as i32
-fn quartiles(numbers: &mut [i64], q: i8) -> i64 {
-    numbers.sort_unstable();
-    match q {
-        1 => {
-            let index = numbers.len() / 4;
-            return numbers[index]
-        },
-        2 => {
-            let index = numbers.len() / 2;
-            return numbers[index]
-        },
-        3 => {
-            // avoid having to use f64
-            let index1 = numbers.len() / 4;
-            let index2 = numbers.len() / 2;
-            return numbers[index1 + index2]
-        },
-        _ => 42 //:)
-    }
-    // first quartile
-    
-    
-}
-
-// n50 , TODO - make it nX with a second parameter
-fn n50(numbers: &mut [i64], fraction: f32) -> i64 {
-
-    numbers.sort_unstable();
-
-    // half of the bases
-    let halfsum = numbers.iter().sum::<i64>() as f32 * fraction; // f32 * f32
-
-    // cumsum of the sorted vector
-    let cumsum = numbers.iter()
-        .scan(0, |sum, i | { *sum += i; Some(*sum) })
-        .collect::<Vec<_>>();
-    let n50_index = cumsum
-        .iter()
-        .position(|&x| x > halfsum as i64)
-        .unwrap();
-
-    numbers[n50_index]
-}
-
-// get number of bases with q >= value
-fn get_qual_bases(q: &[u8], qx: u8) -> i64 {
-    let mut n = 0;
-    for &item in q.iter()
-     {
-        if *&item >= qx {
-            n += 1
-        }
-    }
-    n
-}
-
-// to get mean of q scores from a record - first convert to prob, calc mean, then back to phred
-// this fn reads phred and converts to probs and returns their sum
-// 
-fn qscore_probs(q: &[u8]) -> f32 {
-    let mut qprob_sum= 0.0;
-    for &item in q.iter() {
-        let phred = *&item as f32 - 33.0;
-        let prob = 10.0_f32.powf(-phred/10.0);
-        qprob_sum += prob
-    }
-    qprob_sum
 }
 
 // subsample records (reads) from a fastq file, given number of reads
@@ -148,7 +70,7 @@ fn main() {
                         .short("s")
                         .long("sample")
                         .takes_value(true)
-                        .help("sub-sample sequences by proportion"))
+                        .help("Sub-sample sequences by proportion"))
 
                         .arg(Arg::with_name("filter")
                             .short("f")
@@ -210,7 +132,7 @@ fn main() {
     } else if matches.is_present("qscore") {
 
         while !record.is_empty() {
-            let qscore = qscore_probs(record.qual()) / record.seq().len() as f32;
+            let qscore = modules::qscore_probs(record.qual()) / record.seq().len() as f32;
             println!("{:.4}", -10.0 * qscore.log10());
 
             reader
@@ -293,8 +215,8 @@ fn main() {
         
         reads += 1;
         bases += len;
-        qual20 += get_qual_bases(record.qual(), 53); // 33 offset
-        qual30 += get_qual_bases(record.qual(), 63);
+        qual20 += modules::get_qual_bases(record.qual(), 53); // 33 offset
+        qual30 += modules::get_qual_bases(record.qual(), 63);
         minlen = len.min(minlen);
         maxlen = len.max(maxlen);
         len_vector.push(len);
@@ -304,14 +226,15 @@ fn main() {
             .expect("Failed to parse fastq record!");
     }
 
-    let mean_len = mean(&len_vector);
-    let quart1 = quartiles(&mut len_vector, 1);
-    let quart2 = quartiles(&mut len_vector, 2);
-    let quart3 = quartiles(&mut len_vector, 3);
-    let n50 = n50(&mut len_vector, 0.5); // use 0.1 for N90!!!
+    let mean_len = modules::mean(&len_vector);
+    let quart1 = modules::quartiles(&mut len_vector, 1);
+    let quart2 = modules::quartiles(&mut len_vector, 2);
+    let quart3 = modules::quartiles(&mut len_vector, 3);
+    let n50 = modules::get_nx(&mut len_vector, 0.5); // use 0.1 for N90!!!
     let q20 = qual20 as f64 / bases as f64 * 100.0;
     let q30 = qual30 as f64 / bases as f64 * 100.0;
 
     println!("file\treads\tbases\tmin_len\tmax_len\tmean_len\tQ1\tQ2\tQ3\tN50\tQ20_percent\tQ30_percent");
     println!("{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}", infile, reads, bases, minlen, maxlen, mean_len, quart1, quart2, quart3, n50, q20, q30);
 }
+// END

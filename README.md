@@ -1,10 +1,11 @@
+![Rust](https://github.com/angelovangel/faster/workflows/Rust/badge.svg)
 # faster
 
 A (very) fast program for getting statistics and features from a fastq file, in a usable form, written in Rust.
 
 ## Description
 
-I wrote this program to get *fast* and accurate statistics about a fastq file, formatted as a tab-separated table. In addition, it can do the following with a fastq file:
+I wrote this program to get *fast* and *accurate* statistics about a fastq file, formatted as a tab-delimited table. In addition, it can do the following with a fastq file:
 
 - get the read lengths
 - get gc content per read
@@ -14,9 +15,10 @@ I wrote this program to get *fast* and accurate statistics about a fastq file, f
 
 The motivation behind it:
 
-- many of the tools out there are just wrong when it comes to calculating 'mean' phred scores (yes, just taking the mean phred score is wrong, it should be the geometric mean)
+- many of the tools out there are just wrong when it comes to calculating 'mean' phred scores (yes, just taking the arithmetic mean phred score is wrong, it should be the geometric mean)
 - one simple executable doing one thing well, no dependencies
 - it is straightforward to parse the output in other programs and the output is easy to tweak as desired
+- reasonably fast
 - can be easily run in parallel
 
 ## Install
@@ -59,7 +61,7 @@ The statistics output is a tab-separated table with the following columns:
 ## Performance
 
 To get an idea how `faster` compares to other tools, I have benchmarked it with two other popular programs and 3 different datasets. **I am aware that these tools have different and often much richer functionality (especially seqkit, I use it all the time), so these comparisons are for orientation only**. 
-The benchmarks were performed with [hyperfine]() (`-r 15 --warmup 2`) on a MacBook Pro with an 8-core 2.3 GHz Quad-Core Intel Core i5 and 8 GB RAM. For Illumina reads, `faster` is slightly slower than `seqstats` (written in C using the `klib` [library by Heng Li](https://github.com/attractivechaos/klib) - the fastest thing possible out there), and for Nanopore it is even a bit faster than `seqstats`. `seqkit stats` performs worse of the three tools tested, but bear in mind the extraordinarily rich functionality it has.
+The benchmarks were performed with [hyperfine](https://github.com/sharkdp/hyperfine) (`-r 15 --warmup 2`) on a MacBook Pro with an 8-core 2.3 GHz Quad-Core Intel Core i5 and 8 GB RAM. For Illumina reads, `faster` is slightly slower than `seqstats` (written in C using the `klib` [library by Heng Li](https://github.com/attractivechaos/klib) - the fastest thing possible out there), and for Nanopore it is even a bit faster than `seqstats`. `seqkit stats` performs worse of the three tools tested, but bear in mind the extraordinarily rich functionality it has.
 
 ***
 ### dataset A - a small Nanopore fastq file with 37k reads and 350M bases
