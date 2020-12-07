@@ -35,7 +35,7 @@ fn samplefq(path: &String, n: usize) {
         let r = record.unwrap();
         writer
             .write_record(&r)
-            .expect("Error in writing fastq record!");
+            .expect("Failed to write fastq record!");
     }
 }
 
@@ -64,7 +64,7 @@ fn main() {
                         .arg(Arg::with_name("qscore")
                             .short("q")
                             .long("qscore")
-                            .help("Output 'mean' read qscores, one line per read. For this, the mean of the base probabilities for each read is calculated, and the result is converted back to a phred score"))
+                            .help("Output 'mean' read phred scores, one line per read. For this, the mean of the base probabilities for each read is calculated, and the result is converted back to a phred score"))
 
                         .arg(Arg::with_name("sample")
                         .short("s")
@@ -79,7 +79,7 @@ fn main() {
                             .help("Filter reads based on length - only reads with length greater than [integer] are written to stdout"))
 
                         .arg(Arg::with_name("INPUT")
-                            .help("path to fastq file")
+                            .help("path to a fastq file")
                             .required(true)
                             .index(1))
 
@@ -143,29 +143,29 @@ fn main() {
     
     // case filter
     } else if matches.is_present("filter") {
-        let filterlen = matches.value_of("filter").unwrap();
-        // why so much code to parse an integer from arg!
-        let input_opt = filterlen.trim().parse::<i32>();
-        let input_int = match input_opt {
-            Ok(input_int) => input_int,
-            Err(e) => {
-                println!("Please use an integer for -f ({})", e);
-                return;
-            }
-        };
-
-        while !record.is_empty() {
-            let seqlen = record.seq().len() as i32;
-            // try branchless?
-            if seqlen > input_int {
-                writer
-                    .write_record(&record)
-                    .expect("Failed to write file!");
-            }
-
-            reader
-                .read(&mut record)
-                .expect("Failed to parse fastq record!");
+        
+        let filterlen = matches
+            .value_of("filter")
+            .unwrap()
+            .trim()
+            .parse::<i32>();
+            //.unwrap_or(0);
+        // error on invalid input, rather than trying to guess
+        match filterlen {
+            Ok(x) => {
+                while !record.is_empty() {
+                    let seqlen = record.seq().len() as i32;
+                    if seqlen > x {
+                        writer
+                            .write_record(&record)
+                            .expect("Failed to write fastq record!");
+                    }
+                    reader
+                        .read(&mut record)
+                        .expect("Failed to parse fastq record!");
+                }
+            },
+            Err(e) => eprintln!("Did you use an integer for filter? The error is: '{}'", e),
         }
         process::exit(0);
         
