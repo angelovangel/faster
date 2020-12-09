@@ -76,7 +76,17 @@ fn main() {
                             .short("f")
                             .long("filter")
                             .takes_value(true)
-                            .help("Filter reads based on length - only reads with length greater than [integer] are written to stdout"))
+                            .help("Filter reads based on length - only reads with length GREATER than [integer] are written to stdout"))
+
+                        .arg(Arg::with_name("trim_front")
+                            .long("trim_front")
+                            .takes_value(true)
+                            .help("Trim all reads [integer] bases from the beginning"))
+
+                        .arg(Arg::with_name("trim_tail")
+                            .long("trim_tail")
+                            .takes_value(true)
+                            .help("Trim all reads [integer] bases from the end"))
 
                         .arg(Arg::with_name("INPUT")
                             .help("path to a fastq file")
@@ -85,7 +95,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -94,12 +104,13 @@ fn main() {
 
     let mut reader = fastq::Reader::new(get_fastq_reader(&infile));
     let mut record = fastq::Record::new();
-    let mut writer = fastq::Writer::new(io::stdout());
+    // let mut writer = fastq::Writer::new(io::stdout());
+    // define writer in loop where necessary, otherwise undefined behaviour!
 
     // read first record, then check for arguments
     reader
-            .read(&mut record)
-            .expect("Failed to parse fastq record!");
+        .read(&mut record)
+        .expect("Failed to parse fastq record!");
 
     // stay in loop until all records are read
     //case len
@@ -154,6 +165,7 @@ fn main() {
         match filterlen {
             Ok(x) => {
                 while !record.is_empty() {
+                    let mut writer = fastq::Writer::new(io::stdout());
                     let seqlen = record.seq().len() as i32;
                     if seqlen > x {
                         writer
@@ -185,7 +197,7 @@ fn main() {
             .unwrap()
             .trim()
             .parse::<f32>()
-            .unwrap();
+            .expect("Failed to parse sample fraction value!");
         // how many reads to sample? also check if fraction is 0..1
         match fraction {
             // see <https://stackoverflow.com/a/58434531/8040734>
@@ -198,6 +210,72 @@ fn main() {
             _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!")
         }
         
+    } else if matches.is_present("trim_front") {
+        // parse trim value as usize
+        let trimvalue = matches
+            .value_of("trim_front")
+            .unwrap()
+            .trim()
+            .parse::<usize>()
+            .expect("failed to parse trim value!");
+        
+        
+        while !record.is_empty() {
+            // new writer?
+            let mut writer = fastq::Writer::new(io::stdout());
+            let check = record.check();
+            if check.is_err() {
+                panic!("I got a rubbish record!")
+            }
+            //let seqlen = record.seq().len();
+            let id = record.id();
+            let desc = record.desc();
+            // the new sequence is trim..seq.len
+            let newseq = &record.seq()[trimvalue..];
+            let newqual = &record.qual()[trimvalue..];
+            let newrec = fastq::Record::with_attrs(id, desc, newseq, newqual);
+
+            writer
+                .write_record(&newrec)
+                .expect("Failed to write fastq record!");
+            
+            
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+
+        }
+        process::exit(0);
+
+    } else if matches.is_present("trim_tail") {
+        let trimvalue = matches
+            .value_of("trim_tail")
+            .unwrap()
+            .trim()
+            .parse::<usize>()
+            .expect("failed to parse trim value!");
+
+        while !record.is_empty() {
+            let mut writer = fastq::Writer::new(io::stdout());
+            let seqlen = record.seq().len();
+            let id = record.id();
+            let desc = record.desc();
+            // the new sequence is 0..seq.len - trim
+            let trimright = seqlen - trimvalue;
+            let newseq = &record.seq()[..trimright];
+            let newqual = &record.qual()[..trimright];
+            let newrec = fastq::Record::with_attrs(id, desc, newseq, newqual);
+
+            writer
+                .write_record(&newrec)
+                .expect("Failed to write fastq record!");
+            
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+
+        }
+        process::exit(0);
     }
         
     // normal case, output table
