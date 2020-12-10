@@ -3,6 +3,7 @@ use flate2::bufread;
 use bio::io::{fastq, fastq::FastqRead};
 use bio::seq_analysis::gc::gc_content;
 use rand::seq::IteratorRandom;
+use regex::Regex;
 
 extern crate clap;
 use clap::{Arg, App, ArgGroup};
@@ -67,13 +68,13 @@ fn main() {
                             .help("Output 'mean' read phred scores, one line per read. For this, the mean of the base probabilities for each read is calculated, and the result is converted back to a phred score"))
 
                         .arg(Arg::with_name("sample")
-                        .short("s")
-                        .long("sample")
-                        .takes_value(true)
-                        .help("Sub-sample sequences by proportion"))
+                        //.short("s")
+                            .long("sample")
+                            .takes_value(true)
+                            .help("Sub-sample sequences by proportion"))
 
                         .arg(Arg::with_name("filter")
-                            .short("f")
+                            //.short("f")
                             .long("filter")
                             .takes_value(true)
                             .help("Filter reads based on length - only reads with length GREATER than [integer] are written to stdout"))
@@ -88,14 +89,24 @@ fn main() {
                             .takes_value(true)
                             .help("Trim all reads [integer] bases from the end"))
 
+                        .arg(Arg::with_name("regex_string")
+                            .long("regex_string")
+                            .takes_value(true)
+                            .help("Output only reads whose description field matches a [string] pattern"))
+                        
+                        .arg(Arg::with_name("regex_file")
+                            .long("regex_file")
+                            .takes_value(true)
+                            .help("Output only reads whose description field matches a [string] pattern, read from a file - one line per pattern"))
+
                         .arg(Arg::with_name("INPUT")
-                            .help("path to a fastq file")
+                            .help("Path to a fastq file")
                             .required(true)
                             .index(1))
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -274,6 +285,34 @@ fn main() {
                 .read(&mut record)
                 .expect("Failed to parse fastq record!");
 
+        }
+        process::exit(0);
+    } else if matches.is_present("regex_string") {
+        // parse string
+        let string: &str = matches
+            .value_of("regex_string")
+            .unwrap()
+            .trim();
+
+        let re = Regex::new(string)
+            .expect("Failed to construct regex from string!");
+        
+        while !record.is_empty() {
+            let mut writer = fastq::Writer::new(io::stdout());
+
+            let desc = record.desc().unwrap();
+            if re.is_match(desc) {
+                writer
+                    .write_record(&mut record)
+                    .expect("Error writing fastq record!");
+
+                //reader
+                //    .read(&mut record)
+                //    .expect("Failed to parse fastq record!");
+            }
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
         }
         process::exit(0);
     }
