@@ -92,13 +92,8 @@ fn main() {
                         .arg(Arg::with_name("regex_string")
                             .long("regex_string")
                             .takes_value(true)
-                            .help("Output only reads whose description field matches a [string] pattern"))
+                            .help("Output only reads whose description field matches a regex [string] pattern. See https://docs.rs/regex/1.4.2/regex/#functions"))
                         
-                        .arg(Arg::with_name("regex_file")
-                            .long("regex_file")
-                            .takes_value(true)
-                            .help("Output only reads whose description field matches a [string] pattern, read from a file - one line per pattern"))
-
                         .arg(Arg::with_name("INPUT")
                             .help("Path to a fastq file")
                             .required(true)
@@ -106,7 +101,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -296,26 +291,22 @@ fn main() {
 
         let re = Regex::new(string)
             .expect("Failed to construct regex from string!");
-        
+
         while !record.is_empty() {
             let mut writer = fastq::Writer::new(io::stdout());
-
             let desc = record.desc().unwrap();
             if re.is_match(desc) {
                 writer
                     .write_record(&mut record)
                     .expect("Error writing fastq record!");
-
-                //reader
-                //    .read(&mut record)
-                //    .expect("Failed to parse fastq record!");
             }
+
             reader
                 .read(&mut record)
                 .expect("Failed to parse fastq record!");
         }
         process::exit(0);
-    }
+    } 
         
     // normal case, output table
     let mut reads: i64 = 0;
