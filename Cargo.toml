@@ -5,7 +5,7 @@ readme = "README.md"
 homepage = "https://github.com/angelovangel/fastq-stats"
 repository = "https://github.com/angelovangel/fastq-stats"
 keywords = ["fastq", "bio"]
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Angel Angelov <aangeloo@gmail.com>"]
 edition = "2018"
 
