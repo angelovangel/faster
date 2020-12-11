@@ -1,9 +1,9 @@
-use std::{io, io::BufReader, fs, process};
+use std::{io, io::BufReader, io::BufRead, fs, process};
 use flate2::bufread;
 use bio::io::{fastq, fastq::FastqRead};
 use bio::seq_analysis::gc::gc_content;
 use rand::seq::IteratorRandom;
-use regex::Regex;
+use regex::{Regex, bytes::RegexSet};
 
 extern crate clap;
 use clap::{Arg, App, ArgGroup};
@@ -93,6 +93,10 @@ fn main() {
                             .long("regex_string")
                             .takes_value(true)
                             .help("Output only reads whose description field matches a regex [string] pattern. See https://docs.rs/regex/1.4.2/regex/#functions"))
+                        .arg(Arg::with_name("regex_file")
+                            .long("regex_file")
+                            .takes_value(true)
+                            .help("Output only reads whose description field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
                         
                         .arg(Arg::with_name("INPUT")
                             .help("Path to a fastq file")
@@ -101,7 +105,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -282,6 +286,7 @@ fn main() {
 
         }
         process::exit(0);
+
     } else if matches.is_present("regex_string") {
         // parse string
         let string: &str = matches
@@ -305,6 +310,37 @@ fn main() {
                 .read(&mut record)
                 .expect("Failed to parse fastq record!");
         }
+        process::exit(0);
+    } else if matches.is_present("regex_file") {
+        //parse file
+        let refilepath= matches.value_of("regex_file").unwrap();
+        let refile = fs::File::open(refilepath).expect("File not found!");
+        let re_reader = BufReader::new(refile);
+        
+        // collect regex lines in a vec
+        let mut revec = Vec::new();
+        for line in re_reader.lines().map(|l| l.unwrap()) {
+            //println!("line is: {}", line);
+            revec.push(line);
+        }
+
+        let re_set = RegexSet::new(&revec).unwrap();
+        // write record to stdout in case of match
+        while !record.is_empty() {
+            let mut writer = fastq::Writer::new(io::stdout());
+            let desc = record.desc().unwrap().as_bytes(); // as.bytes because RegexSet matches on bytes
+            
+            if re_set.is_match(desc) {
+                writer
+                    .write_record(&mut record)
+                    .expect("Error writing fastq record!");
+            }
+
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
+        }
+        //println!("vector: {:?}", &revec);
         process::exit(0);
     } 
         
