@@ -18,11 +18,10 @@ fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
     } else {
         let f = fs::File::open(path).unwrap();
         Box::new(BufReader::new(f))
-        //Box::new(fs::File::open(path).unwrap())
     }
 }
 
-// subsample records (reads) from a fastq file, given number of reads
+// subsample records (reads) from a fastq file (path), given fraction n
 fn samplefq(path: &String, n: usize) {
 
     let records = fastq::Reader::new(get_fastq_reader(path)).records();
@@ -60,7 +59,7 @@ fn main() {
                         .arg(Arg::with_name("gc")
                             .short("g")
                             .long("gc")
-                            .help("Output gc values, one line per read"))
+                            .help("Output GC-content, one line per read"))
 
                         .arg(Arg::with_name("qscore")
                             .short("q")
@@ -71,13 +70,14 @@ fn main() {
                         //.short("s")
                             .long("sample")
                             .takes_value(true)
-                            .help("Sub-sample sequences by proportion"))
+                            .help("Sub-sample sequences by proportion (0.0 to 1.0)"))
 
                         .arg(Arg::with_name("filter")
                             //.short("f")
                             .long("filter")
                             .takes_value(true)
-                            .help("Filter reads based on length - only reads with length GREATER than [integer] are written to stdout"))
+                            .allow_hyphen_values(true) //important to parse negative integers
+                            .help("Filter reads based on length - use positive integer to filter for reads LONGER than [integer] and negative integer to filter for reads that are SHORTER than [integer]"))
 
                         .arg(Arg::with_name("trim_front")
                             .long("trim_front")
@@ -177,10 +177,18 @@ fn main() {
                 while !record.is_empty() {
                     let mut writer = fastq::Writer::new(io::stdout());
                     let seqlen = record.seq().len() as i32;
-                    if seqlen > x {
-                        writer
-                            .write_record(&record)
-                            .expect("Failed to write fastq record!");
+                    if x >= 0 {
+                        if seqlen > x {
+                            writer
+                                .write_record(&record)
+                                .expect("Failed to write fastq record!");
+                        }
+                    } else if x < 0{
+                        if seqlen < x.abs() {
+                            writer
+                                .write_record(&record)
+                                .expect("Failed to write fastq record!")
+                        }
                     }
                     reader
                         .read(&mut record)

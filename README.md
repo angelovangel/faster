@@ -10,8 +10,10 @@ I wrote this program to get *fast* and *accurate* statistics about a fastq file,
 - get the read lengths
 - get gc content per read
 - get geometric mean of phred scores per read
-- filter reads based on length
+- filter reads based on length (both greater than and smaller than a desired length)
 - subsample reads (by proportion of all reads in the file)
+- trim front and trim tail - trim x number of bases from the beginning/end of each read
+- regex search for reads containing a pattern in their description field
 
 The motivation behind it:
 
@@ -56,7 +58,7 @@ parallel faster ::: /path/to/fastq/*.fastq.gz | sed -n '/^file\treads/!p'
 ```
 
 The statistics output is a tab-separated table with the following columns:   
-`file   reads   bases   minlen   max_len   mean_len   Q1   Q2   Q3   N50 Q20_percent Q30_percent`
+`file   reads   bases   min_len   max_len   mean_len   Q1   Q2   Q3   N50 Q20_percent Q30_percent`
 
 ## Performance
 
