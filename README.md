@@ -58,7 +58,7 @@ parallel faster ::: /path/to/fastq/*.fastq.gz | sed -n '/^file\treads/!p'
 ```
 
 The statistics output is a tab-separated table with the following columns:   
-`file   reads   bases   min_len   max_len   mean_len   Q1   Q2   Q3   N50 Q20_percent Q30_percent`
+`file   reads   bases   n_bases   min_len   max_len   mean_len   Q1   Q2   Q3   N50 Q20_percent Q30_percent`
 
 ## Performance
 
