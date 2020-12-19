@@ -355,6 +355,7 @@ fn main() {
     // normal case, output table
     let mut reads: i64 = 0;
     let mut bases: i64 = 0;
+    let mut num_n = 0;
     let mut qual20: i64 = 0;
     let mut qual30: i64 = 0;
     let mut minlen: i64 = i64::MAX;
@@ -367,6 +368,7 @@ fn main() {
         
         reads += 1;
         bases += len;
+        num_n += modules::get_n_bases(record.seq());
         qual20 += modules::get_qual_bases(record.qual(), 53); // 33 offset
         qual30 += modules::get_qual_bases(record.qual(), 63);
         minlen = len.min(minlen);
@@ -386,7 +388,7 @@ fn main() {
     let q20 = qual20 as f64 / bases as f64 * 100.0;
     let q30 = qual30 as f64 / bases as f64 * 100.0;
 
-    println!("file\treads\tbases\tmin_len\tmax_len\tmean_len\tQ1\tQ2\tQ3\tN50\tQ20_percent\tQ30_percent");
-    println!("{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}", infile, reads, bases, minlen, maxlen, mean_len, quart1, quart2, quart3, n50, q20, q30);
+    println!("file\treads\tbases\tn_bases\tmin_len\tmax_len\tmean_len\tQ1\tQ2\tQ3\tN50\tQ20_percent\tQ30_percent");
+    println!("{}\t{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}", infile, reads, bases, num_n, minlen, maxlen, mean_len, quart1, quart2, quart3, n50, q20, q30);
 }
 // END

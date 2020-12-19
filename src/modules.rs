@@ -62,6 +62,17 @@ pub fn get_qual_bases(q: &[u8], qx: u8) -> i64 {
     n
 }
 
+// get number of N bases
+pub fn get_n_bases(seq: &[u8]) -> i32 {
+    let mut n = 0;
+    for s in seq {
+        if *s == 78u8 || *s == 110u8 {
+            n += 1;
+        }
+    }
+    n
+}
+
 // to get mean of q scores from a record - first convert to prob, calc mean, then back to phred
 // this fn reads phred and converts to probs and returns their sum
 // 
