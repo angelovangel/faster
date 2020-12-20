@@ -355,7 +355,7 @@ fn main() {
     // normal case, output table
     let mut reads: i64 = 0;
     let mut bases: i64 = 0;
-    let mut num_n = 0;
+    let mut num_n: i32 = 0;
     let mut qual20: i64 = 0;
     let mut qual30: i64 = 0;
     let mut minlen: i64 = i64::MAX;

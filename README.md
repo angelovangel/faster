@@ -48,13 +48,13 @@ The program takes one fastq/fastq.gz file as an argument and, when used with the
 faster --help # or -h
 
 # get a table with statistics
-faster -s /path/to/fastq/file.fastq
+faster -t /path/to/fastq/file.fastq
 
 # for many files, with parallel
-parallel faster ::: /path/to/fastq/*.fastq.gz
+parallel faster -t ::: /path/to/fastq/*.fastq.gz
 
 # again with parallel, but get rid of the table header
-parallel faster ::: /path/to/fastq/*.fastq.gz | sed -n '/^file\treads/!p'
+parallel faster -t ::: /path/to/fastq/*.fastq.gz | sed -n '/^file\treads/!p'
 ```
 
 The statistics output is a tab-separated table with the following columns:   
@@ -70,7 +70,7 @@ The benchmarks were performed with [hyperfine](https://github.com/sharkdp/hyperf
 
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `faster -s datasetA.fastq` | 398.1 ± 21.2 | 380.4 | 469.6 | 1.00 |
+| `faster -t datasetA.fastq` | 398.1 ± 21.2 | 380.4 | 469.6 | 1.00 |
 | `seqstats datasetA.fastq` | 633.6 ± 54.1 | 593.3 | 773.6 | 1.59 ± 0.16 |
 | `seqkit stats -a datasetA.fastq` | 1864.5 ± 70.3 | 1828.7 | 2117.3 | 4.68 ± 0.31 |
 
@@ -80,7 +80,7 @@ The benchmarks were performed with [hyperfine](https://github.com/sharkdp/hyperf
 
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `faster -s datasetB.fastq.gz` | 181.7 ± 2.3 | 177.7 | 184.6 | 1.36 ± 0.09 |
+| `faster -t datasetB.fastq.gz` | 181.7 ± 2.3 | 177.7 | 184.6 | 1.36 ± 0.09 |
 | `seqstats datasetB.fastq.gz` | 133.4 ± 8.4 | 125.7 | 154.2 | 1.00 |
 | `seqkit stats -a datasetB.fastq.gz` | 932.6 ± 37.0 | 873.8 | 1028.9 | 6.99 ± 0.52 |
 
@@ -90,7 +90,7 @@ The benchmarks were performed with [hyperfine](https://github.com/sharkdp/hyperf
 
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| `parallel faster -s ::: *.fastq.gz` | 6.438 ± 0.384 | 6.009 | 7.062 | 1.43 ± 0.15 |
+| `parallel faster -t ::: *.fastq.gz` | 6.438 ± 0.384 | 6.009 | 7.062 | 1.43 ± 0.15 |
 | `parallel seqstats ::: *.fastq.gz` | 4.488 ± 0.394 | 4.120 | 5.312 | 1.00 |
 | `parallel seqkit stats -a ::: *.fastq.gz` | 40.156 ± 1.747 | 38.762 | 44.132 | 8.95 ± 0.88 |
 

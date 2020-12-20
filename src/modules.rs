@@ -53,9 +53,9 @@ pub fn get_nx(numbers: &mut [i64], fraction: f32) -> i64 {
 // get number of bases with q >= value
 pub fn get_qual_bases(q: &[u8], qx: u8) -> i64 {
     let mut n = 0;
-    for &item in q.iter()
+    for item in q
      {
-        if *&item >= qx {
+        if *item >= qx {
             n += 1
         }
     }
@@ -66,7 +66,7 @@ pub fn get_qual_bases(q: &[u8], qx: u8) -> i64 {
 pub fn get_n_bases(seq: &[u8]) -> i32 {
     let mut n = 0;
     for s in seq {
-        if *s == 78u8 || *s == 110u8 {
+        if s == &78u8 || s == &110u8 {
             n += 1;
         }
     }
