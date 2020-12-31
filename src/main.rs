@@ -1,12 +1,12 @@
-use std::{io, io::BufReader, io::BufRead, fs, process};
-use flate2::bufread;
 use bio::io::{fastq, fastq::FastqRead};
 use bio::seq_analysis::gc::gc_content;
+use flate2::bufread;
 use rand::seq::IteratorRandom;
-use regex::{Regex, bytes::RegexSet};
+use regex::{bytes::RegexSet, Regex};
+use std::{fs, io, io::BufRead, io::BufReader, process};
 
 extern crate clap;
-use clap::{Arg, App, ArgGroup};
+use clap::{App, Arg, ArgGroup};
 // own functions
 mod modules;
 
@@ -23,7 +23,6 @@ fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
 
 // subsample records (reads) from a fastq file (path), given fraction n
 fn samplefq(path: &String, n: usize) {
-
     let records = fastq::Reader::new(get_fastq_reader(path)).records();
     let mut writer = fastq::Writer::new(io::stdout());
     let mut rng = rand::thread_rng();
@@ -40,7 +39,6 @@ fn samplefq(path: &String, n: usize) {
 }
 
 fn main() {
-
     let matches = App::new("faster")
                         .version("0.1.4")
                         .author("Angel Angelov <aangeloo@gmail.com>")
@@ -125,7 +123,6 @@ fn main() {
     // stay in loop until all records are read
     //case len
     if matches.is_present("len") {
-
         while !record.is_empty() {
             let len = record.seq().len() as i64;
             println!("{}", len);
@@ -138,7 +135,6 @@ fn main() {
 
     // case gc
     } else if matches.is_present("gc") {
-
         while !record.is_empty() {
             let seq = record.seq();
             println!("{}", gc_content(seq));
@@ -151,7 +147,6 @@ fn main() {
 
     // case qscore
     } else if matches.is_present("qscore") {
-
         while !record.is_empty() {
             let qscore = modules::qscore_probs(record.qual()) / record.seq().len() as f32;
             println!("{:.4}", -10.0 * qscore.log10());
@@ -161,16 +156,11 @@ fn main() {
                 .expect("Failed to parse fastq record!");
         }
         process::exit(0);
-    
+
     // case filter
     } else if matches.is_present("filter") {
-        
-        let filterlen = matches
-            .value_of("filter")
-            .unwrap()
-            .trim()
-            .parse::<i32>();
-            //.unwrap_or(0);
+        let filterlen = matches.value_of("filter").unwrap().trim().parse::<i32>();
+        //.unwrap_or(0);
         // error on invalid input, rather than trying to guess
         match filterlen {
             Ok(x) => {
@@ -183,7 +173,7 @@ fn main() {
                                 .write_record(&record)
                                 .expect("Failed to write fastq record!");
                         }
-                    } else if x < 0{
+                    } else if x < 0 {
                         if seqlen < x.abs() {
                             writer
                                 .write_record(&record)
@@ -194,11 +184,10 @@ fn main() {
                         .read(&mut record)
                         .expect("Failed to parse fastq record!");
                 }
-            },
+            }
             Err(e) => eprintln!("Did you use an integer for filter? The error is: '{}'", e),
         }
         process::exit(0);
-        
     } else if matches.is_present("sample") {
         // get n reads first
         let mut reads: i64 = 0;
@@ -224,10 +213,9 @@ fn main() {
                 samplefq(&infile, nreads as usize);
                 //println!("nreads: {}", nreads as usize);
                 process::exit(0);
-            },
-            _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!")
+            }
+            _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!"),
         }
-        
     } else if matches.is_present("trim_front") {
         // parse trim value as usize
         let trimvalue = matches
@@ -236,8 +224,7 @@ fn main() {
             .trim()
             .parse::<usize>()
             .expect("failed to parse trim value!");
-        
-        
+
         while !record.is_empty() {
             // new writer?
             let mut writer = fastq::Writer::new(io::stdout());
@@ -256,15 +243,12 @@ fn main() {
             writer
                 .write_record(&newrec)
                 .expect("Failed to write fastq record!");
-            
-            
+
             reader
                 .read(&mut record)
                 .expect("Failed to parse fastq record!");
-
         }
         process::exit(0);
-
     } else if matches.is_present("trim_tail") {
         let trimvalue = matches
             .value_of("trim_tail")
@@ -287,23 +271,17 @@ fn main() {
             writer
                 .write_record(&newrec)
                 .expect("Failed to write fastq record!");
-            
+
             reader
                 .read(&mut record)
                 .expect("Failed to parse fastq record!");
-
         }
         process::exit(0);
-
     } else if matches.is_present("regex_string") {
         // parse string
-        let string: &str = matches
-            .value_of("regex_string")
-            .unwrap()
-            .trim();
+        let string: &str = matches.value_of("regex_string").unwrap().trim();
 
-        let re = Regex::new(string)
-            .expect("Failed to construct regex from string!");
+        let re = Regex::new(string).expect("Failed to construct regex from string!");
 
         while !record.is_empty() {
             let mut writer = fastq::Writer::new(io::stdout());
@@ -321,10 +299,10 @@ fn main() {
         process::exit(0);
     } else if matches.is_present("regex_file") {
         //parse file
-        let refilepath= matches.value_of("regex_file").unwrap();
+        let refilepath = matches.value_of("regex_file").unwrap();
         let refile = fs::File::open(refilepath).expect("File not found!");
         let re_reader = BufReader::new(refile);
-        
+
         // collect regex lines in a vec
         let mut revec = Vec::new();
         for line in re_reader.lines().map(|l| l.unwrap()) {
@@ -337,7 +315,7 @@ fn main() {
         while !record.is_empty() {
             let mut writer = fastq::Writer::new(io::stdout());
             let desc = record.desc().unwrap().as_bytes(); // as.bytes because RegexSet matches on bytes
-            
+
             if re_set.is_match(desc) {
                 writer
                     .write_record(&mut record)
@@ -350,8 +328,8 @@ fn main() {
         }
         //println!("vector: {:?}", &revec);
         process::exit(0);
-    } 
-        
+    }
+
     // normal case, output table
     let mut reads: i64 = 0;
     let mut bases: i64 = 0;
@@ -365,7 +343,7 @@ fn main() {
     while !record.is_empty() {
         //let seq = record.seq();
         let len = record.seq().len() as i64; // here have to accomodate bigger numbers, as bases can get > 2^32
-        
+
         reads += 1;
         bases += len;
         num_n += modules::get_n_bases(record.seq());
@@ -389,6 +367,21 @@ fn main() {
     let q30 = qual30 as f64 / bases as f64 * 100.0;
 
     println!("file\treads\tbases\tn_bases\tmin_len\tmax_len\tmean_len\tQ1\tQ2\tQ3\tN50\tQ20_percent\tQ30_percent");
-    println!("{}\t{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}", infile, reads, bases, num_n, minlen, maxlen, mean_len, quart1, quart2, quart3, n50, q20, q30);
+    println!(
+        "{}\t{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}",
+        infile,
+        reads,
+        bases,
+        num_n,
+        minlen,
+        maxlen,
+        mean_len,
+        quart1,
+        quart2,
+        quart3,
+        n50,
+        q20,
+        q30
+    );
 }
 // END
