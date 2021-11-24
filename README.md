@@ -54,7 +54,7 @@ faster -t /path/to/fastq/file.fastq
 parallel faster -t ::: /path/to/fastq/*.fastq.gz
 
 # again with parallel, but get rid of the table header
-parallel faster -t ::: /path/to/fastq/*.fastq.gz | sed -n '/^file\treads/!p'
+parallel faster -ts ::: /path/to/fastq/*.fastq.gz
 ```
 
 The statistics output is a tab-separated table with the following columns:   
