@@ -44,6 +44,11 @@ fn main() {
                         .author("Angel Angelov <aangeloo@gmail.com>")
                         .about("fast statistics and more for 1 fastq file")
 
+                        .arg(Arg::with_name("skip_header")
+                            .short("s")
+                            .long("skip_header")
+                            .help("skip header in table output"))
+
                         .arg(Arg::with_name("table")
                             .short("t")
                             .long("table")
@@ -366,7 +371,9 @@ fn main() {
     let q20 = qual20 as f64 / bases as f64 * 100.0;
     let q30 = qual30 as f64 / bases as f64 * 100.0;
 
+    if !matches.is_present("skip_header") {
     println!("file\treads\tbases\tn_bases\tmin_len\tmax_len\tmean_len\tQ1\tQ2\tQ3\tN50\tQ20_percent\tQ30_percent");
+    }
     println!(
         "{}\t{}\t{}\t{}\t{}\t{}\t{:.2}\t{}\t{}\t{}\t{}\t{:.2}\t{:.2}",
         infile,
