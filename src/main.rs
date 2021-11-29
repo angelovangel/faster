@@ -3,6 +3,7 @@ use bio::seq_analysis::gc::gc_content;
 use flate2::bufread;
 use rand::seq::IteratorRandom;
 use regex::{bytes::RegexSet, Regex};
+//use std::io::Read;
 use std::{fs, io, io::BufRead, io::BufReader, process};
 
 extern crate clap;
@@ -100,7 +101,6 @@ fn main() {
                             .long("regex_file")
                             .takes_value(true)
                             .help("Output only reads whose description field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
-                        
                         .arg(Arg::with_name("INPUT")
                             .help("Path to a fastq file")
                             .required(true)
