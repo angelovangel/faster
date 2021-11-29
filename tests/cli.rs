@@ -12,7 +12,7 @@ fn find_content_in_output() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains( "11313\t60245316\t0\t143") );
+        .stdout(predicate::str::contains( "10\t18931\t0\t165") );
 
     Ok(())
 }
