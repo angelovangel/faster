@@ -5,7 +5,7 @@ readme = "README.md"
 homepage = "https://github.com/angelovangel/faster"
 repository = "https://github.com/angelovangel/faster"
 keywords = ["fastq", "bio"]
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Angel Angelov <aangeloo@gmail.com>"]
 edition = "2018"
 

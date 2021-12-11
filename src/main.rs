@@ -1,7 +1,7 @@
 use bio::io::{fastq, fastq::FastqRead};
 use bio::seq_analysis::gc::gc_content;
 use flate2::bufread;
-use rand::seq::IteratorRandom;
+//use rand::seq::IteratorRandom;
 use regex::{bytes::RegexSet, Regex};
 //use std::io::Read;
 use std::{fs, io, io::BufRead, io::BufReader, process};
@@ -22,17 +22,18 @@ fn get_fastq_reader(path: &String) -> Box<dyn (::std::io::Read)> {
     }
 }
 
-// subsample records (reads) from a fastq file (path), given fraction n
 fn samplefq(path: &String, n: usize) {
-    let records = fastq::Reader::new(get_fastq_reader(path)).records();
+    let records = fastq::Reader::new(get_fastq_reader(path))
+        .records()
+        .step_by(n);
     let mut writer = fastq::Writer::new(io::stdout());
-    let mut rng = rand::thread_rng();
-
+    
     // sampled is a vector of result types
-    let sampled = records.choose_multiple(&mut rng, n);
-    for record in sampled {
+    //let sampled = records.choose_multiple(&mut rng, n);
+    for record in records {
         // get the record
         let r = record.unwrap();
+        
         writer
             .write_record(&r)
             .expect("Failed to write fastq record!");
@@ -41,7 +42,7 @@ fn samplefq(path: &String, n: usize) {
 
 fn main() {
     let matches = App::new("faster")
-                        .version("0.1.4")
+                        .version("0.1.5")
                         .author("Angel Angelov <aangeloo@gmail.com>")
                         .about("fast statistics and more for 1 fastq file")
 
@@ -74,7 +75,7 @@ fn main() {
                         //.short("s")
                             .long("sample")
                             .takes_value(true)
-                            .help("Sub-sample sequences by proportion (0.0 to 1.0)"))
+                            .help("Sub-sample sequences by proportion (0.0 to 1.0). Slow on large files!"))
 
                         .arg(Arg::with_name("filter")
                             //.short("f")
@@ -195,9 +196,9 @@ fn main() {
         process::exit(0);
     } else if matches.is_present("sample") {
         // get n reads first
-        let mut reads: i64 = 0;
+        let mut reads: usize = 0;
         while !record.is_empty() {
-            reads += 1;
+            reads += 1;  // all reads
             reader
                 .read(&mut record)
                 .expect("Failed to parse fastq record!");
@@ -213,10 +214,11 @@ fn main() {
         // how many reads to sample? also check if fraction is 0..1
         match fraction {
             // see <https://stackoverflow.com/a/58434531/8040734>
-            x if (0.0..1.0).contains(&x) => {
-                let nreads = reads as f32 * fraction;
-                samplefq(&infile, nreads as usize);
-                //println!("nreads: {}", nreads as usize);
+            x if (0.0..=1.0).contains(&x) => {
+                let nreads = reads as f32 * fraction; // number of reads needed
+
+                samplefq(&infile, reads/nreads as usize); // step_by 
+                
                 process::exit(0);
             }
             _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!"),

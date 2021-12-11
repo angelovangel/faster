@@ -35,7 +35,7 @@ cd faster
 cargo build --release
 
 # the binary is now under ./target/release/, run it like this:
-./target/release/faster /path/to/fastq/file.fastq.gz
+./target/release/faster -t /path/to/fastq/file.fastq.gz
 
 ```
 
