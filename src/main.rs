@@ -203,11 +203,6 @@ fn main() {
             .parse::<f32>()
             .expect("Failed to parse sample fraction value!");
 
-        // get n reads first
-        //let mut reads: usize = 0;
-        while !record.is_empty() {
-            //reads += 1;  // all reads
-            // how many reads to sample? also check if fraction is 0..1
             match fraction {
                 // see <https://stackoverflow.com/a/58434531/8040734>
                 x if (0.0..=1.0).contains(&x) => {
@@ -216,10 +211,6 @@ fn main() {
                     process::exit(0);
                 }
                 _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!"),
-            }
-            reader
-                .read(&mut record)
-                .expect("Failed to parse fastq record!");
         }
 
         
