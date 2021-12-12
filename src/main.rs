@@ -195,15 +195,6 @@ fn main() {
         }
         process::exit(0);
     } else if matches.is_present("sample") {
-        // get n reads first
-        let mut reads: usize = 0;
-        while !record.is_empty() {
-            reads += 1;  // all reads
-            reader
-                .read(&mut record)
-                .expect("Failed to parse fastq record!");
-        }
-
         // parse fraction
         let fraction = matches
             .value_of("sample")
@@ -211,18 +202,27 @@ fn main() {
             .trim()
             .parse::<f32>()
             .expect("Failed to parse sample fraction value!");
-        // how many reads to sample? also check if fraction is 0..1
-        match fraction {
-            // see <https://stackoverflow.com/a/58434531/8040734>
-            x if (0.0..=1.0).contains(&x) => {
-                let nreads = reads as f32 * fraction; // number of reads needed
 
-                samplefq(&infile, reads/nreads as usize); // step_by 
-                
-                process::exit(0);
+        // get n reads first
+        //let mut reads: usize = 0;
+        while !record.is_empty() {
+            //reads += 1;  // all reads
+            // how many reads to sample? also check if fraction is 0..1
+            match fraction {
+                // see <https://stackoverflow.com/a/58434531/8040734>
+                x if (0.0..=1.0).contains(&x) => {
+
+                    samplefq(&infile, (1 as f32/fraction) as usize); // 1/fraction gives step_by 
+                    process::exit(0);
+                }
+                _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!"),
             }
-            _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!"),
+            reader
+                .read(&mut record)
+                .expect("Failed to parse fastq record!");
         }
+
+        
     } else if matches.is_present("trim_front") {
         // parse trim value as usize
         let trimvalue = matches
