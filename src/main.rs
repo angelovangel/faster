@@ -139,6 +139,7 @@ fn main() {
         }
         process::exit(0);
 
+        
     // case gc
     } else if matches.is_present("gc") {
         while !record.is_empty() {
