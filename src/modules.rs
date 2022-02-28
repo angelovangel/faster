@@ -80,3 +80,16 @@ pub fn qscore_probs(q: &[u8]) -> f32 {
     }
     qprob_sum
 }
+// get geometric mean from phred scores
+pub fn phred_gm(q: &[u8]) -> f64 {
+    let mut phred_product = 0.;
+    
+    for &item in q {                       
+    let phred = *&item as f64 - 33.0;
+
+            phred_product += phred.ln();
+
+    }
+    let result = phred_product / q.len() as f64;
+    result.exp()
+}
