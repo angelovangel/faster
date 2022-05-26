@@ -71,6 +71,9 @@ pub fn get_n_bases(seq: &[u8]) -> i32 {
 // to get mean of q scores from a record - first convert to prob, calc mean, then back to phred
 // this fn reads phred and converts to probs and returns their sum
 //
+// see how seqkit is doing it
+// https://github.com/shenwei356/bio/blob/1886d4a9eab7315f6f445595acbdc7bc3edf0e08/seq/seq.go#L727
+
 pub fn qscore_probs(q: &[u8]) -> f32 {
     let mut qprob_sum = 0.0;
     for &item in q.iter() {
