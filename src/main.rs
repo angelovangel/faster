@@ -155,10 +155,11 @@ fn main() {
     // case qscore
     } else if matches.is_present("qscore") {
         while !record.is_empty() {
-            //let qscore = modules::qscore_probs(record.qual()) / record.seq().len() as f32;
-            //println!("{:.4}", -10.0 * qscore.log10());
-            let qscore = modules::phred_gm( &record.qual() );
-            println!("{:.4}", qscore);
+            let qscore = modules::qscore_probs(record.qual()) / record.seq().len() as f32;
+            println!("{:.4}", -10.0 * qscore.log10());
+
+            //let qscore = modules::phred_gm( &record.qual() );
+            //println!("{:.4}", qscore);
             
             reader
                 .read(&mut record)
