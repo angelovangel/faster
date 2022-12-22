@@ -10,6 +10,7 @@ I wrote this program to get *fast* and *accurate* statistics about a fastq file,
 - get the read lengths
 - get gc content per read
 - get geometric mean of phred scores per read
+- get NX values for all the reads, e.g. N50
 - filter reads based on length (both greater than and smaller than a desired length)
 - subsample reads (by proportion of all reads in the file)
 - trim front and trim tail - trim x number of bases from the beginning/end of each read
@@ -46,6 +47,9 @@ The program takes one fastq/fastq.gz file as an argument and, when used with the
 ```bash
 # for help
 faster --help # or -h
+
+# get some N10, N50 and N90 values
+for i in 0.1 0.5 0.9; do faster --nx $i /path/to/fastq/file.fastq; done
 
 # get a table with statistics
 faster -t /path/to/fastq/file.fastq

@@ -71,6 +71,11 @@ fn main() {
                             .long("qscore")
                             .help("Output 'mean' read phred scores, one line per read. For this, the mean of the base probabilities for each read is calculated, and the result is converted back to a phred score"))
 
+                        .arg(Arg::with_name("nx")
+                            .long("nx")
+                            .takes_value(true)
+                            .help("Output NX value, provide the desired NX value as 0.5 for e.g. N50 [numeric]"))
+
                         .arg(Arg::with_name("sample")
                         //.short("s")
                             .long("sample")
@@ -109,7 +114,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file", "nx"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -198,6 +203,42 @@ fn main() {
             Err(e) => eprintln!("Did you use an integer for filter? The error is: '{}'", e),
         }
         process::exit(0);
+
+    // case nx    
+    } else if matches.is_present("nx") {
+        let nxvalue: f32 = matches.
+            value_of("nx")
+            .unwrap()
+            .trim()
+            .parse::<f32>()
+            .expect("Failed to parse desired NX value");
+
+            match nxvalue {
+                x if (0.0..=1.0).contains(&x) => {
+                    // do work
+                    let mut lengths: Vec<i64> = Vec::new();
+
+                    while !record.is_empty() {
+                        let len = record.seq().len() as i64;
+                        lengths.push(len);
+
+                        reader
+                            .read(&mut record)
+                            .expect("Failed to parse fastq record!");
+                    
+                    }
+                    let nx = modules::get_nx(&mut lengths, 1.0 - nxvalue);
+                    let nx_value = nxvalue * 100.0;
+                    
+                    println!("N{}\t{}", nx_value as i16, nx);
+                    process::exit(0)
+                }
+                _ => {
+                    eprintln!("The NX value should be between 0.1 and 1.0");
+                    process::exit(0)
+                }
+            }
+
     } else if matches.is_present("sample") {
         // parse fraction
         let fraction = matches
@@ -214,7 +255,10 @@ fn main() {
                     samplefq(&infile, (1 as f32/fraction) as usize); // 1/fraction gives step_by 
                     process::exit(0);
                 }
-                _ => eprintln!("The subsample fraction should be between 0.0 and 1.0!"),
+                _ => {
+                    eprintln!("The subsample fraction should be between 0.0 and 1.0");
+                    process::exit(0)
+                }
         }
 
         
