@@ -1,7 +1,8 @@
 // simple helper functions for calcuting mean, quartiles etc
+use rayon::prelude::*;
 
 pub fn mean(numbers: &[i64]) -> f64 {
-    numbers.iter().sum::<i64>() as f64 / numbers.len() as f64
+    numbers.par_iter().sum::<i64>() as f64 / numbers.len() as f64
 }
 
 pub fn quartiles(numbers: &mut [i64], q: i8) -> i64 {
@@ -31,7 +32,7 @@ pub fn get_nx(numbers: &mut [i64], fraction: f32) -> i64 {
     numbers.sort_unstable();
 
     // half of the bases
-    let halfsum = numbers.iter().sum::<i64>() as f32 * fraction; // f32 * f32
+    let halfsum = numbers.par_iter().sum::<i64>() as f32 * fraction; // f32 * f32
 
     // cumsum of the sorted vector
     let cumsum = numbers
@@ -41,7 +42,7 @@ pub fn get_nx(numbers: &mut [i64], fraction: f32) -> i64 {
             Some(*sum)
         })
         .collect::<Vec<_>>();
-    let n50_index = cumsum.iter().position(|&x| x > halfsum as i64).unwrap();
+    let n50_index = cumsum.par_iter().position_first(|&x| x > halfsum as i64).unwrap();
 
     numbers[n50_index]
 }

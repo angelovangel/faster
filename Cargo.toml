@@ -17,6 +17,7 @@ flate2 = "1.0.18"
 clap = "~2.33.3"
 rand = "0.7.3"
 regex = "1"
+rayon = "1.5"
 
 [dev-dependencies]
 assert_cmd = "0.10"
