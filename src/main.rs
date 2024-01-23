@@ -42,7 +42,7 @@ fn samplefq(path: &String, n: usize) {
 
 fn main() {
     let matches = App::new("faster")
-                        .version("0.1.5")
+                        .version("0.2.0")
                         .author("Angel Angelov <aangeloo@gmail.com>")
                         .about("fast statistics and more for 1 fastq file")
 
@@ -75,7 +75,10 @@ fn main() {
                             .long("nx")
                             .takes_value(true)
                             .help("Output NX value, provide the desired NX value as 0.5 for e.g. N50 [numeric]"))
-
+                        .arg(Arg::with_name("qyield")
+                            .long("qyield")
+                            .takes_value(true)
+                            .help("Percent bases with Q score of x or higher (use range 8..60)"))
                         .arg(Arg::with_name("sample")
                         //.short("s")
                             .long("sample")
@@ -114,7 +117,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file", "nx"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file", "nx", "qyield"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -206,8 +209,8 @@ fn main() {
 
     // case nx    
     } else if matches.is_present("nx") {
-        let nxvalue: f32 = matches.
-            value_of("nx")
+        let nxvalue: f32 = matches
+            .value_of("nx")
             .unwrap()
             .trim()
             .parse::<f32>()
@@ -238,7 +241,38 @@ fn main() {
                     process::exit(0)
                 }
             }
+    } else if matches.is_present("qyield") {
+        let qvalue = matches
+            .value_of("qyield")
+            .unwrap()
+            .trim()
+            .parse::<u8>()
+            .expect("Failed to parse desired QX value");
 
+            match qvalue {
+                x if (8..=60).contains(&x) => {
+                    let mut bases: i64 = 0;
+                    let mut qualx: i64 = 0;
+                    // do work
+                    while !record.is_empty() {
+                        let len = record.seq().len() as i64;
+                        bases += len;
+                        qualx += modules::get_qual_bases(record.qual(), 33 + qvalue); // 33 offset
+
+                        reader
+                            .read(&mut record)
+                            .expect("Failed to parse fastq record!")
+                    }
+                    let qx = qualx as f64 / bases as f64 * 100.0;
+                    println!("Q{}\t{:.2}", qvalue, qx);
+                    process::exit(0)
+                }
+                _ => {
+                    eprintln!("The qyield value should be between 10 and 60");
+                    process::exit(0)
+                }
+            }
+    
     } else if matches.is_present("sample") {
         // parse fraction
         let fraction = matches
