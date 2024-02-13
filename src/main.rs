@@ -42,7 +42,7 @@ fn samplefq(path: &String, n: usize) {
 
 fn main() {
     let matches = App::new("faster")
-                        .version("0.2.0")
+                        .version("0.2.1")
                         .author("Angel Angelov <aangeloo@gmail.com>")
                         .about("fast statistics and more for 1 fastq file")
 
@@ -105,11 +105,11 @@ fn main() {
                         .arg(Arg::with_name("regex_string")
                             .long("regex_string")
                             .takes_value(true)
-                            .help("Output only reads whose description field matches a regex [string] pattern. See https://docs.rs/regex/1.4.2/regex/#functions"))
+                            .help("Output only reads whose id field matches a regex [string] pattern. See https://docs.rs/regex/1.4.2/regex/#functions"))
                         .arg(Arg::with_name("regex_file")
                             .long("regex_file")
                             .takes_value(true)
-                            .help("Output only reads whose description field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
+                            .help("Output only reads whose id field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
                         .arg(Arg::with_name("INPUT")
                             .help("Path to a fastq file")
                             .required(true)
@@ -365,8 +365,8 @@ fn main() {
 
         while !record.is_empty() {
             let mut writer = fastq::Writer::new(io::stdout());
-            let desc = record.desc().unwrap();
-            if re.is_match(desc) {
+            let readid = record.id();
+            if re.is_match(readid) {
                 writer
                     .write_record(&mut record)
                     .expect("Error writing fastq record!");
@@ -394,9 +394,9 @@ fn main() {
         // write record to stdout in case of match
         while !record.is_empty() {
             let mut writer = fastq::Writer::new(io::stdout());
-            let desc = record.desc().unwrap().as_bytes(); // as.bytes because RegexSet matches on bytes
+            let readid = record.id().as_bytes(); // as.bytes because RegexSet matches on bytes
 
-            if re_set.is_match(desc) {
+            if re_set.is_match(readid) {
                 writer
                     .write_record(&mut record)
                     .expect("Error writing fastq record!");
