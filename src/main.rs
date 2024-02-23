@@ -5,6 +5,8 @@ use flate2::bufread;
 use regex::{bytes::RegexSet, Regex};
 //use std::io::Read;
 use std::{fs, io, io::BufRead, io::BufReader, process};
+use indicatif::ProgressBar;
+use std::time::Duration;
 
 extern crate clap;
 use clap::{App, Arg, ArgGroup};
@@ -419,6 +421,8 @@ fn main() {
     let mut minlen: i64 = i64::MAX;
     let mut maxlen = 0;
     let mut len_vector: Vec<i64> = Vec::new();
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(120));
 
     while !record.is_empty() {
         //let seq = record.seq();
@@ -432,6 +436,7 @@ fn main() {
         minlen = len.min(minlen);
         maxlen = len.max(maxlen);
         len_vector.push(len);
+        pb.set_message("Calculating...");
 
         reader
             .read(&mut record)
@@ -445,6 +450,7 @@ fn main() {
     let n50 = modules::get_nx(&mut len_vector, 0.5); // use 0.1 for N90!!!
     let q20 = qual20 as f64 / bases as f64 * 100.0;
     let q30 = qual30 as f64 / bases as f64 * 100.0;
+    pb.finish_and_clear();
 
     if !matches.is_present("skip_header") {
     println!("file\treads\tbases\tn_bases\tmin_len\tmax_len\tmean_len\tQ1\tQ2\tQ3\tN50\tQ20_percent\tQ30_percent");
