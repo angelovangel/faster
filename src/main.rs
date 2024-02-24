@@ -5,7 +5,7 @@ use flate2::bufread;
 use regex::{bytes::RegexSet, Regex};
 //use std::io::Read;
 use std::{fs, io, io::BufRead, io::BufReader, process};
-use indicatif::ProgressBar;
+use indicatif::{HumanCount, ProgressBar};
 use std::time::Duration;
 
 extern crate clap;
@@ -436,7 +436,8 @@ fn main() {
         minlen = len.min(minlen);
         maxlen = len.max(maxlen);
         len_vector.push(len);
-        pb.set_message("Calculating...");
+        let message = format!("Processed reads: {}", HumanCount(reads as u64).to_string());
+        pb.set_message(message);
 
         reader
             .read(&mut record)
