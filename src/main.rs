@@ -75,41 +75,55 @@ fn main() {
 
                         .arg(Arg::with_name("nx")
                             .long("nx")
+                            .short("x")
                             .takes_value(true)
                             .help("Output NX value, provide the desired NX value as 0.5 for e.g. N50 [numeric]"))
                         .arg(Arg::with_name("qyield")
                             .long("qyield")
+                            .short("y")
                             .takes_value(true)
                             .help("Percent bases with Q score of x or higher (use range 8..60)"))
                         .arg(Arg::with_name("sample")
                         //.short("s")
                             .long("sample")
+                            .short("p")
                             .takes_value(true)
                             .help("Sub-sample sequences by proportion (0.0 to 1.0). Slow on large files!"))
 
-                        .arg(Arg::with_name("filter")
-                            //.short("f")
-                            .long("filter")
+                        .arg(Arg::with_name("filterl")
+                            .short("f")
+                            .long("filterl")
                             .takes_value(true)
                             .allow_hyphen_values(true) //important to parse negative integers
                             .help("Filter reads based on length - use positive integer to filter for reads LONGER than [integer] and negative integer to filter for reads that are SHORTER than [integer]"))
+                        .arg(Arg::with_name("filterq")
+                            .short("w")
+                            .long("filterq")
+                            .takes_value(true)
+                            .allow_hyphen_values(true) //important to parse negative integers
+                            .help("Filter reads based on 'mean' read quality - use positive integer to filter for reads with BETTER quality than [integer] and negative integer to filter for reads with WORSE wuality than [integer]. Use range 8..60 for qscores"))
+
 
                         .arg(Arg::with_name("trim_front")
                             .long("trim_front")
+                            .short("a")
                             .takes_value(true)
                             .help("Trim all reads [integer] bases from the beginning"))
 
                         .arg(Arg::with_name("trim_tail")
                             .long("trim_tail")
+                            .short("b")
                             .takes_value(true)
                             .help("Trim all reads [integer] bases from the end"))
 
                         .arg(Arg::with_name("regex_string")
                             .long("regex_string")
+                            .short("r")
                             .takes_value(true)
                             .help("Output only reads whose id field matches a regex [string] pattern. See https://docs.rs/regex/1.4.2/regex/#functions"))
                         .arg(Arg::with_name("regex_file")
                             .long("regex_file")
+                            .short("z")
                             .takes_value(true)
                             .help("Output only reads whose id field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
                         .arg(Arg::with_name("INPUT")
@@ -119,7 +133,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filter", "sample", "trim_front", "trim_tail", "regex_string", "regex_file", "nx", "qyield"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filterl", "filterq", "sample", "trim_front", "trim_tail", "regex_string", "regex_file", "nx", "qyield"]))
                         .get_matches();
     //println!("Working on {}", matches.value_of("INPUT").unwrap());
     // read file
@@ -165,8 +179,9 @@ fn main() {
     // case qscore
     } else if matches.is_present("qscore") {
         while !record.is_empty() {
-            let qscore = modules::qscore_probs(record.qual()) / record.seq().len() as f32;
-            println!("{:.4}", -10.0 * qscore.log10());
+            let mean_errorp = modules::qscore_probs(record.qual()) / record.seq().len() as f32;
+            //println!("{:.4}", mean_errorp);
+            println!("{:.4}", -10.0 * mean_errorp.log10());
 
             //let qscore = modules::phred_gm( &record.qual() );
             //println!("{:.4}", qscore);
@@ -177,9 +192,13 @@ fn main() {
         }
         process::exit(0);
 
-    // case filter
-    } else if matches.is_present("filter") {
-        let filterlen = matches.value_of("filter").unwrap().trim().parse::<i32>();
+    // case filter length
+    } else if matches.is_present("filterl") {
+        let filterlen = matches
+            .value_of("filterl")
+            .unwrap()
+            .trim()
+            .parse::<i32>();
         //.unwrap_or(0);
         // error on invalid input, rather than trying to guess
         match filterlen {
@@ -208,7 +227,46 @@ fn main() {
             Err(e) => eprintln!("Did you use an integer for filter? The error is: '{}'", e),
         }
         process::exit(0);
-
+    // case filter by qscore
+    } else if matches.is_present("filterq"){
+        let filterq = matches
+            .value_of("filterq")
+            .unwrap()
+            .trim()
+            .parse::<i32>()
+            .expect("Failed to parse desired q value, please use integer between 8 and 60");
+        match filterq {
+            q if (8..=60).contains(&q) => {
+                // do stuff
+                while !record.is_empty() {
+                    let mut writer = fastq::Writer::new(io::stdout());
+                    let mean_errorp = modules::qscore_probs(record.qual()) / record.seq().len() as f32;
+                    let mean_qscore = -10.0 * mean_errorp.log10();
+                    let q_f32 = q as f32;
+                    if q >= 0 {
+                        if mean_qscore > q_f32 {
+                            writer
+                                .write_record(&record)
+                                .expect("Failed to write fastq record!");
+                        }
+                    } else if q < 0 {
+                        if mean_qscore < q_f32.abs() {
+                            writer
+                                .write_record(&record)
+                                .expect("Failed to write fastq record!")
+                        }
+                    }
+                    reader
+                        .read(&mut record)
+                        .expect("Failed to parse fastq record!");
+                }
+            }
+            _ => {
+                eprintln!("The q value should be between 10 and 60");
+                process::exit(1)
+            }
+        }
+        process::exit(0);
     // case nx    
     } else if matches.is_present("nx") {
         let nxvalue: f32 = matches
@@ -249,7 +307,7 @@ fn main() {
             .unwrap()
             .trim()
             .parse::<u8>()
-            .expect("Failed to parse desired QX value");
+            .expect("Failed to parse desired q value");
 
             match qvalue {
                 x if (8..=60).contains(&x) => {
@@ -271,7 +329,7 @@ fn main() {
                 }
                 _ => {
                     eprintln!("The qyield value should be between 10 and 60");
-                    process::exit(0)
+                    process::exit(1)
                 }
             }
     

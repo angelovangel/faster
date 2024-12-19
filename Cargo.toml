@@ -1,11 +1,11 @@
 [package]
 name = "faster"
-description = "fast statistics and more for 1 fastq file"
+description = "fast statistics and more for a fastx file"
 readme = "README.md"
 homepage = "https://github.com/angelovangel/faster"
 repository = "https://github.com/angelovangel/faster"
 keywords = ["fastq", "bio"]
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Angel Angelov <aangeloo@gmail.com>"]
 edition = "2018"
 
