@@ -1,21 +1,20 @@
 [package]
 name = "faster"
-description = "fast statistics and more for a fastx file"
+description = "fast statistics and filtering for a fastx file"
 readme = "README.md"
 homepage = "https://github.com/angelovangel/faster"
 repository = "https://github.com/angelovangel/faster"
 keywords = ["fastq", "bio"]
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Angel Angelov <aangeloo@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+kseq = "0.5.3"
 bio = "*"
-flate2 = "1.0.18"
-clap = "~2.33.3"
-rand = "0.7.3"
+clap = "3.2.25"
 regex = "1"
 rayon = "1.5"
 indicatif = "0.17.8"

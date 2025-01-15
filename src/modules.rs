@@ -1,6 +1,6 @@
 // simple helper functions for calcuting mean, quartiles etc
 use rayon::prelude::*;
-
+use kseq::record::Fastx;
 pub fn mean(numbers: &[i64]) -> f64 {
     numbers.par_iter().sum::<i64>() as f64 / numbers.len() as f64
 }
@@ -83,6 +83,16 @@ pub fn qscore_probs(q: &[u8]) -> f32 {
         qprob_sum += prob
     }
     qprob_sum
+}
+
+pub fn write_fastq(rec: Fastx<'_>) {
+    println!(
+        "{} {}\n{}\n{}\n{}", 
+        "@".to_string() + rec.head(), rec.des(), 
+        rec.seq(), 
+        "+", 
+        rec.qual()
+    );
 }
 // get geometric mean from phred scores
 // pub fn phred_gm(q: &[u8]) -> f64 {
