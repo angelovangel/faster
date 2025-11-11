@@ -84,7 +84,7 @@ fn main() {
                             .takes_value(true)
                             .help("Output only reads whose id field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
                         .arg(Arg::with_name("INPUT")
-                            .help("Path to a fastq file")
+                            .help("Paths to a fastq files, glob patterns and stdin can also be used")
                             .required(true)
                             .multiple_values(true)
                             .min_values(1)
@@ -165,7 +165,7 @@ fn main() {
                 .parse::<i32>()
                 .expect("Failed to parse desired q value, please use integer between 8 and 60");
             match filterq {
-                q if (8..=60).contains(&q) => {
+                q if (-60..=60).contains(&q) => {
                     // do stuff
                     while let Some(record) = records.iter_record().unwrap() {
                         let mean_errorp = modules::qscore_probs(record.qual().as_bytes()) / record.seq().len() as f32;
