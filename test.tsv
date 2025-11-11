@@ -1,0 +1,3 @@
+file	reads	bases	n_bases	min_len	max_len	mean_len	Q1	Q2	Q3	N50	Q20_percent	Q30_percent
+/Users/angeloas/Desktop/testfastq/ont/zymo-114-dup.fastq	15811	115636800	0	221	64997	7313.69	1141	3250	8431	18695	99.62	99.07
+/Users/angeloas/Desktop/testfastq/ont/zymo-114.fastq	162800	1025133805	0	85	130043	6296.89	847	2521	6647	17650	85.44	63.00
