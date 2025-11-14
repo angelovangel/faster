@@ -84,7 +84,7 @@ fn main() {
                             .takes_value(true)
                             .help("Output only reads whose id field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
                         .arg(Arg::with_name("INPUT")
-                            .help("Paths to a fastq files, glob patterns and stdin can also be used")
+                            .help("Paths to fastq files, glob patterns and stdin can also be used")
                             .required(true)
                             .multiple_values(true)
                             .min_values(1)
