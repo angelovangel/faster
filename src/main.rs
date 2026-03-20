@@ -257,15 +257,13 @@ fn main() {
                 match fraction {
                     // see <https://stackoverflow.com/a/58434531/8040734>
                     x if (0.0..=1.0).contains(&x) => {
-                        let nth = 1 as f32/fraction; // 1/fraction gives step_by
-                        let mut recn = 0;
+                        let mut acc: f32 = 0.0;
                         while let Some(record) = records.iter_record().unwrap() {
-                            recn += 1;
-                            if recn != nth as i32 {
-                                continue;
+                            acc += fraction;
+                            if acc >= 1.0 {
+                                acc -= 1.0;
+                                write_fastq(record);
                             }
-                            recn = 0;
-                            write_fastq(record);
                         }
                     }
                     _ => {
