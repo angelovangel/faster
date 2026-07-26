@@ -107,3 +107,54 @@ pub fn write_fastq(rec: Fastx<'_>) {
 //     let result = phred_product / q.len() as f64;
 //     result.exp()
 // }
+
+/// Map a DNA triplet to an index 0..63; returns None for ambiguous bases.
+fn triplet_index(tri: &[u8]) -> Option<usize> {
+    let encode = |b: u8| match b {
+        b'A' | b'a' => Some(0usize),
+        b'C' | b'c' => Some(1),
+        b'G' | b'g' => Some(2),
+        b'T' | b't' => Some(3),
+        _ => None,
+    };
+    let a = encode(tri[0])?;
+    let b = encode(tri[1])?;
+    let c = encode(tri[2])?;
+    Some(a * 16 + b * 4 + c)
+}
+
+/// Calculate the DUST score for a sequence.
+/// Uses windows of `window` bp (default 64). Returns the maximum window score
+/// across the whole read. A score > 2.0 indicates low-complexity sequence.
+pub fn dust_score(seq: &[u8], window: usize) -> f64 {
+    if seq.len() < 3 {
+        return 0.0;
+    }
+    let mut max_score: f64 = 0.0;
+    for chunk in seq.chunks(window) {
+        if chunk.len() < 3 {
+            continue;
+        }
+        let mut counts = [0u32; 64]; // 4^3 possible DNA triplets
+        let mut n_triplets: f64 = 0.0;
+        for tri in chunk.windows(3) {
+            if let Some(idx) = triplet_index(tri) {
+                counts[idx] += 1;
+                n_triplets += 1.0;
+            }
+        }
+        if n_triplets < 2.0 {
+            continue;
+        }
+        let score: f64 = counts
+            .iter()
+            .filter(|&&c| c > 0)
+            .map(|&c| (c as f64 * (c as f64 - 1.0)) / 2.0)
+            .sum::<f64>()
+            / (n_triplets - 1.0);
+        if score > max_score {
+            max_score = score;
+        }
+    }
+    max_score
+}

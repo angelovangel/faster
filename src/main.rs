@@ -10,6 +10,16 @@ use clap::{App, Arg, ArgGroup};
 // own functions
 mod modules;
 
+fn print_filter_stats(total: u64, kept: u64) {
+    let filtered = total - kept;
+    let w = total.to_string().len();
+    let kept_pct   = if total > 0 { kept     as f64 / total as f64 * 100.0 } else { 0.0 };
+    let filt_pct   = if total > 0 { filtered as f64 / total as f64 * 100.0 } else { 0.0 };
+    eprintln!("{:>w$} reads",            total,    w = w);
+    eprintln!("{:>w$} kept ({:.1}%)",   kept,     kept_pct, w = w);
+    eprintln!("{:>w$} filtered out ({:.1}%)", filtered, filt_pct, w = w);
+}
+
 fn main() {
     let matches = App::new("faster")
                         .version("0.2.4")
@@ -83,6 +93,13 @@ fn main() {
                             .short('z')
                             .takes_value(true)
                             .help("Output only reads whose id field matches a regex [string] pattern. The regex patterns are read from a file, one line per pattern."))
+                        .arg(Arg::with_name("dust")
+                            .long("dust")
+                            .short('d')
+                            .takes_value(true)
+                            .allow_hyphen_values(true)
+                            .default_missing_value("2.0")
+                            .help("Filter reads using the DUST low-complexity algorithm. Use a positive float to remove reads with a DUST score ABOVE [float] (default: 2.0 if no value given). Use a negative float to keep ONLY low-complexity reads (DUST score above the absolute value)."))
                         .arg(Arg::with_name("INPUT")
                             .help("Paths to fastq files, glob patterns and stdin can also be used")
                             .required(true)
@@ -92,7 +109,7 @@ fn main() {
 
                         // this group makes one and only one arg from the set required, avoid defining conflicts_with
                         .group(ArgGroup::with_name("group")
-                        .required(true).args(&["table", "len", "gc", "qscore", "filterl", "filterq", "sample", "trim_front", "trim_tail", "regex_string", "regex_file", "nx", "qyield"]))
+                        .required(true).args(&["table", "len", "gc", "qscore", "filterl", "filterq", "sample", "trim_front", "trim_tail", "regex_string", "regex_file", "nx", "qyield", "dust"]))
                         .get_matches();
 
     let infiles: Vec<&str> = matches.values_of("INPUT").unwrap().collect();
@@ -140,18 +157,24 @@ fn main() {
             // error on invalid input, rather than trying to guess
             match filterlen {
                 Ok(x) => {
+                    let mut total: u64 = 0;
+                    let mut kept: u64 = 0;
                     while let Some(record) = records.iter_record().unwrap() {
+                        total += 1;
                         let seqlen = record.seq().len() as i32;
                         if x >= 0 {
                             if seqlen > x {
                                 write_fastq(record);
+                                kept += 1;
                             }
                         } else if x < 0 {
                             if seqlen < x.abs() {
                                 write_fastq(record);
+                                kept += 1;
                             }
                         }
                     }
+                    print_filter_stats(total, kept);
                 }
                 Err(e) => eprintln!("Did you use an integer for filter? The error is: '{}'", e),
             }
@@ -166,21 +189,26 @@ fn main() {
                 .expect("Failed to parse desired q value, please use integer between 8 and 60");
             match filterq {
                 q if (-60..=60).contains(&q) => {
-                    // do stuff
+                    let mut total: u64 = 0;
+                    let mut kept: u64 = 0;
                     while let Some(record) = records.iter_record().unwrap() {
+                        total += 1;
                         let mean_errorp = modules::qscore_probs(record.qual().as_bytes()) / record.seq().len() as f32;
                         let mean_qscore = -10.0 * mean_errorp.log10();
                         let q_f32 = q as f32;
                         if q >= 0 {
                             if mean_qscore > q_f32 {
                                 write_fastq(record);
+                                kept += 1;
                             }
                         } else if q < 0 {
                             if mean_qscore < q_f32.abs() {
                                 write_fastq(record);
+                                kept += 1;
                             }
                         }
                     }
+                    print_filter_stats(total, kept);
                 }
                 _ => {
                     eprintln!("The q value should be between 10 and 60");
@@ -328,12 +356,17 @@ fn main() {
 
             let re = Regex::new(string).expect("Failed to construct regex from string!");
 
+            let mut total: u64 = 0;
+            let mut kept: u64 = 0;
             while let Some(record) = records.iter_record().unwrap() {
+                total += 1;
                 let readid = record.head();
                 if re.is_match(readid) {
-                    write_fastq(record);  
+                    write_fastq(record);
+                    kept += 1;
                 }
             }
+            print_filter_stats(total, kept);
             continue; // Go to the next file
         } else if matches.is_present("regex_file") {
             //parse file
@@ -344,20 +377,54 @@ fn main() {
             // collect regex lines in a vec
             let mut revec = Vec::new();
             for line in re_reader.lines().map(|l| l.unwrap()) {
-                //println!("line is: {}", line);
                 revec.push(line);
             }
 
             let re_set = RegexSet::new(&revec).unwrap();
+            let mut total: u64 = 0;
+            let mut kept: u64 = 0;
             // write record to stdout in case of match
             while let Some(record) = records.iter_record().unwrap() {
+                total += 1;
                 let readid = record.head().as_bytes(); // as.bytes because RegexSet matches on bytes
 
                 if re_set.is_match(readid) {
                     write_fastq(record);
+                    kept += 1;
                 }
             }
-            //println!("vector: {:?}", &revec);
+            print_filter_stats(total, kept);
+            continue; // Go to the next file
+
+        // case dust filter
+        } else if matches.is_present("dust") {
+            let dust_thresh = matches
+                .value_of("dust")
+                .unwrap()
+                .trim()
+                .parse::<f64>()
+                .expect("Failed to parse DUST threshold, use a float e.g. 2.0");
+
+            let mut total: u64 = 0;
+            let mut kept: u64 = 0;
+            while let Some(record) = records.iter_record().unwrap() {
+                total += 1;
+                let score = modules::dust_score(record.seq().as_bytes(), 64);
+                if dust_thresh >= 0.0 {
+                    // keep only reads that are NOT low-complexity
+                    if score <= dust_thresh {
+                        write_fastq(record);
+                        kept += 1;
+                    }
+                } else {
+                    // negative threshold: keep ONLY low-complexity reads
+                    if score > dust_thresh.abs() {
+                        write_fastq(record);
+                        kept += 1;
+                    }
+                }
+            }
+            print_filter_stats(total, kept);
             continue; // Go to the next file
 
         // case table (only runs if table is requested and none of the other single-task options were matched)
