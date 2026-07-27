@@ -22,9 +22,9 @@ fn print_filter_stats(total: u64, kept: u64) {
 
 fn main() {
     let matches = App::new("faster")
-                        .version("0.2.4")
+                        .version("0.2.5")
                         .author("Angel Angelov <aangeloo@gmail.com>")
-                        .about("fast statistics and more for 1 fastq file")
+                        .about("fast statistics and filtering for a fastx file")
                         .arg(Arg::with_name("skip_header")
                             .short('s')
                             .long("skip_header")
